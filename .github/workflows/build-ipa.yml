@@ -23,15 +23,15 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 关键步骤1：只生成 iOS 目录和配置，不进行实际编译
+      # 关键神级走位：声明为 simulator，完美绕过 Flutter 的证书前置审查，并生成所需的配置和 Pods
       - name: Prepare iOS Project & Pods
-        run: flutter build ios --config-only
+        run: flutter build ios --simulator --config-only
 
-      # 关键步骤2：使用 Ruby 脚本强行剥离所有目标工程的签名要求
-      - name: Force Disable All Code Signing (Nuclear Option)
+      # 使用 Ruby 脚本强行剥离主工程和插件包的所有签名要求
+      - name: Force Disable All Code Signing
         run: |
           gem install xcodeproj --no-document
-          cat << 'EOF' > disable_signing.rb
+          cat << 'INNER_EOF' > disable_signing.rb
           require 'xcodeproj'
 
           def disable_signing(project_path)
@@ -56,12 +56,12 @@ jobs:
             project.save
           end
 
-          # 同时干掉主工程和 Pods 插件工程的签名
           disable_signing('ios/Runner.xcodeproj')
           disable_signing('ios/Pods/Pods.xcodeproj')
-          EOF
+          INNER_EOF
           ruby disable_signing.rb
 
+      # 此时 Xcode 工程已变“瞎子”，放行无签编译
       - name: Build iOS (Unsigned)
         run: flutter build ios --release --no-codesign
 
