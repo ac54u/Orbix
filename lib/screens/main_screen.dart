@@ -856,62 +856,50 @@ class _ServerSettingsPageState extends State<ServerSettingsPage> {
     );
   }
 
-  // 发现新版时的高亮卡片：版本/体积/更新日志 + 「立即更新」。
-  // 点「立即更新」即开始下载，进度内联（不弹确认框、不弹下载框）。
+  // 更新卡片：紧凑样式
   Widget _buildUpdateCard(AppRelease rel) {
     final accent = AppColors.accent.resolveFrom(context);
-    final size = _fmtMB(rel.ipaSize);
     final notes = rel.notes.trim();
-    final meta = [
-      if (size.isNotEmpty) size,
-      '当前 ${_appVersion ?? '—'}',
-    ].join('  ·  ');
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.of(AppColors.card),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: accent.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Icon(CupertinoIcons.sparkles, color: accent, size: 24),
-              const SizedBox(width: 10),
+              Icon(CupertinoIcons.sparkles, color: accent, size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text('新版本 ${rel.tag}',
-                    style: AppTypography.cardTitle().copyWith(fontSize: 20)),
+                    style: AppTypography.cardTitle().copyWith(fontSize: 16)),
               ),
             ],
           ),
           if (notes.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
               notes,
               style: AppTypography.subtitle(),
-              maxLines: 4,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: CupertinoButton.filled(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              borderRadius: BorderRadius.circular(10),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              borderRadius: BorderRadius.circular(8),
               onPressed: () => _install(rel),
               child: const Text('立即更新',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
