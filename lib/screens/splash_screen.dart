@@ -4,12 +4,15 @@ import 'package:get/get.dart';
 import '../services/qbit_api.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../widgets/connecting_dialog.dart';
+import 'main_screen.dart';
 import 'server_selection_screen.dart';
 import 'welcome_screen.dart';
 
 /// 启动决策页：
 ///  - 本地无服务器 → 欢迎页（首次引导）
-///  - 已有服务器   → 服务器选择页（启动首页）
+///  - 有活跃服务器   → 自动连接，成功直接进主界面
+///  - 自动连接失败   → 退回服务器选择页
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -27,11 +30,34 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _decideStart() async {
     final servers = await QBitApi.loadServers();
     if (!mounted) return;
+
+    // 无服务器：首次使用 → 欢迎引导
     if (servers.isEmpty) {
       Get.offAll(() => const WelcomeScreen());
-    } else {
-      Get.offAll(() => const ServerSelectionPage());
+      return;
     }
+
+    // 尝试自动连接上次活跃服务器
+    final active = await QBitApi.loadSavedConfig();
+    if (active != null) {
+      final api = QBitApi();
+      api.setServer(active);
+      // 弹出轻量连接遮罩（与选择页手动连接同款）
+      if (mounted) showConnectingDialog(context);
+      final result = await api.connect();
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (result.success) {
+        Get.offAll(() => const MainScreen());
+        return;
+      }
+      // 连接失败：静默退回选择页，用户可编辑/切换
+    }
+
+    // 兜底：服务器选择页
+    if (!mounted) return;
+    Get.offAll(() => const ServerSelectionPage());
   }
 
   @override
