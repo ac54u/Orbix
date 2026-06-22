@@ -41,6 +41,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   final _focusNode = FocusNode();
   final _debouncer = Debouncer(milliseconds: 400);
   final _scrollCtrl = ScrollController();
+  final _tabScrollCtrl = ScrollController();
 
   _OnlineState _state = _OnlineState.idle;
   List<Map<String, dynamic>> _allResults = [];
@@ -52,7 +53,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   String _sizeFilter = 'all';
   final Set<String> _bookmarks = {};
 
-  static const _filterChips = ['', 'FC2-PPV', 'HEYZO', 'LUXU', 'MIUM', '200GANA', 'SIRO', 'SGKI'];
+  static const _filterChips = ['', 'FC2-PPV', 'HEYZO', 'LUXU', 'MIUM', '200GANA', 'SIRO', 'SGKI', 'BDA', 'DANDY', 'CARIB', 'HMDNV', 'MKD'];
   static const _sizeOptions = [
     ('all', '全部'),
     ('small', '<1 GB'),
@@ -78,6 +79,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _focusNode.dispose();
     _shimmerCtrl.dispose();
     _scrollCtrl.dispose();
+    _tabScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -94,13 +96,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   void _toggleBookmark(String magnet) {
     setState(() {
-      if (_bookmarks.contains(magnet)) {
-        _bookmarks.remove(magnet);
-        _toast('已取消收藏', ok: true);
-      } else {
-        _bookmarks.add(magnet);
-        _toast('已收藏', ok: true);
-      }
+      if (_bookmarks.contains(magnet)) { _bookmarks.remove(magnet); _toast('已取消收藏', ok: true); }
+      else { _bookmarks.add(magnet); _toast('已收藏', ok: true); }
     });
     _saveBookmarks();
   }
@@ -121,6 +118,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         setState(() => _state = _OnlineState.empty);
       } else {
         setState(() {
+          _state = _OnlineState.results;
           _allResults = items.map(_toResultMap).toList();
           _lastPage = 5;
           _applyFilters();
@@ -132,10 +130,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Future<void> _runSearch(String pattern) async {
-    if (pattern.trim().isEmpty) {
-      _loadLatest();
-      return;
-    }
+    if (pattern.trim().isEmpty) { _loadLatest(); return; }
     setState(() {
       _state = _OnlineState.loading;
       _allResults = [];
@@ -148,6 +143,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         setState(() => _state = _OnlineState.empty);
       } else {
         setState(() {
+          _state = _OnlineState.results;
           _allResults = items.map(_toResultMap).toList();
           _lastPage = 10;
           _applyFilters();
@@ -168,9 +164,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       if (!mounted) return;
       final seen = _allResults.map((r) => r['fileUrl'] as String).toSet();
       for (final item in items) {
-        if (!seen.contains(item.magnet)) {
-          _allResults.add(_toResultMap(item));
-        }
+        if (!seen.contains(item.magnet)) _allResults.add(_toResultMap(item));
       }
       setState(() {
         _isLoadingMore = false;
@@ -185,49 +179,29 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void _applyFilters() {
     var list = _allResults.toList();
     if (_activeFilter.isNotEmpty) {
-      list = list.where((r) {
-        final code = (r['code'] ?? '').toString();
-        return code.startsWith(_activeFilter);
-      }).toList();
+      list = list.where((r) => (r['code'] ?? '').toString().startsWith(_activeFilter)).toList();
     }
-    list = list.where(_sizeFilterMatch).toList();
-    _filteredResults = list;
+    _filteredResults = list.where(_sizeFilterMatch).toList();
   }
 
   bool _sizeFilterMatch(Map r) {
-    final sizeStr = (r['sizeStr'] ?? '').toString();
-    final parsed = _parseSizeGB(sizeStr);
-    if (parsed == null) return _sizeFilter == 'all';
-    switch (_sizeFilter) {
-      case 'small': return parsed < 1;
-      case 'medium': return parsed >= 1 && parsed < 3;
-      case 'large': return parsed >= 3 && parsed < 5;
-      case 'xlarge': return parsed >= 5;
-      default: return true;
-    }
-  }
-
-  double? _parseSizeGB(String s) {
-    final m = RegExp(r'([\d.]+)\s*(GB|MB|TB)', caseSensitive: false).firstMatch(s);
-    if (m == null) return null;
+    final m = RegExp(r'([\d.]+)\s*(GB|MB|TB)', caseSensitive: false).firstMatch((r['sizeStr'] ?? '').toString());
+    if (m == null) return _sizeFilter == 'all';
     final num = double.tryParse(m.group(1)!) ?? 0;
-    switch (m.group(2)!.toUpperCase()) {
-      case 'TB': return num * 1000;
-      case 'GB': return num;
-      case 'MB': return num / 1000;
-      default: return null;
-    }
+    final gb = switch (m.group(2)!.toUpperCase()) { 'TB' => num * 1000, 'MB' => num / 1000, _ => num };
+    return switch (_sizeFilter) {
+      'small' => gb < 1,
+      'medium' => gb >= 1 && gb < 3,
+      'large' => gb >= 3 && gb < 5,
+      'xlarge' => gb >= 5,
+      _ => true,
+    };
   }
 
   Map<String, dynamic> _toResultMap(ScrapedTorrent item) => {
-    'fileName': item.title,
-    'fileUrl': item.magnet,
-    'code': item.code,
-    'thumbnail': item.thumbnail ?? '',
-    'sizeStr': item.size,
-    'date': item.date,
-    'pageUrl': item.pageUrl,
-    'torrentUrl': item.torrentUrl,
+    'fileName': item.title, 'fileUrl': item.magnet, 'code': item.code,
+    'thumbnail': item.thumbnail ?? '', 'sizeStr': item.size, 'date': item.date,
+    'pageUrl': item.pageUrl, 'torrentUrl': item.torrentUrl,
   };
 
   void _addMagnet(String url) async {
@@ -256,125 +230,153 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     AppColors.watch(context);
+    final hasResults = _state == _OnlineState.results && _filteredResults.isNotEmpty;
     return Column(
       children: [
-        _buildHeader(),
-        _buildSearchBar(),
-        if (_state == _OnlineState.results && _allResults.isNotEmpty) _buildFilterBar(),
+        _buildHeader(hasResults),
+        if (hasResults) _buildFilterBar(),
         Expanded(child: _buildBody()),
       ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool hasResults) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 10, hasResults ? 8 : 20, 0),
       child: Row(
         children: [
           Expanded(child: Text('141PPV', style: AppTypography.largeTitle())),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            child: Icon(
-              _bookmarks.isEmpty ? CupertinoIcons.heart : CupertinoIcons.heart_fill,
-              size: 22, color: _bookmarks.isEmpty ? AppColors.of(AppColors.tertiaryLabel) : AppColors.danger,
+          if (!hasResults) ...[
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: Icon(
+                _bookmarks.isEmpty ? CupertinoIcons.heart : CupertinoIcons.heart_fill,
+                size: 22, color: _bookmarks.isEmpty ? AppColors.of(AppColors.tertiaryLabel) : AppColors.danger,
+              ),
+              onPressed: () => _showBookmarks(),
             ),
-            onPressed: () => _showBookmarks(),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: CupertinoSearchTextField(
-        controller: _queryCtrl,
-        focusNode: _focusNode,
-        placeholder: '搜索番号或名称 …',
-        style: AppTypography.body(),
-        placeholderStyle: AppTypography.body(color: AppColors.of(AppColors.tertiaryLabel)),
-        backgroundColor: AppColors.of(AppColors.card),
-        onChanged: (text) => _debouncer.run(() => _runSearch(text)),
-      ),
-    );
-  }
-
   Widget _buildFilterBar() {
-    return Column(
-      children: [
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              for (final chip in _filterChips)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _activeFilter = _activeFilter == chip ? '' : chip;
-                        _applyFilters();
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _activeFilter == chip
-                            ? AppColors.accent
-                            : AppColors.of(AppColors.card),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
+    return Container(
+      padding: const EdgeInsets.only(left: 16, right: 8, top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CupertinoSearchTextField(
+            controller: _queryCtrl,
+            focusNode: _focusNode,
+            placeholder: '搜索番号或名称 …',
+            style: AppTypography.body().copyWith(fontSize: 15),
+            placeholderStyle: AppTypography.body(color: AppColors.of(AppColors.tertiaryLabel)).copyWith(fontSize: 15),
+            backgroundColor: AppColors.of(AppColors.card),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            onChanged: (text) => _debouncer.run(() => _runSearch(text)),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 34,
+            child: ListView(
+              controller: _tabScrollCtrl,
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final chip in _filterChips)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _activeFilter = _activeFilter == chip ? '' : chip;
+                          _applyFilters();
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
                           color: _activeFilter == chip
                               ? AppColors.accent
-                              : AppColors.of(AppColors.separator),
+                              : AppColors.of(AppColors.card),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _activeFilter == chip
+                                ? AppColors.accent
+                                : AppColors.of(AppColors.separator),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        chip.isEmpty ? '全部' : chip,
-                        style: AppTypography.caption(color: _activeFilter == chip ? Colors.white : AppColors.of(AppColors.secondaryLabel)),
+                        child: Text(
+                          chip.isEmpty ? '全部' : chip,
+                          style: AppTypography.caption().copyWith(
+                            fontSize: 12,
+                            color: _activeFilter == chip ? Colors.white : AppColors.of(AppColors.secondaryLabel),
+                            fontWeight: _activeFilter == chip ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
                       ),
                     ),
                   ),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  onPressed: () => _showSizeFilter(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.square_favorites_alt, size: 13, color: AppColors.accent),
+                      const SizedBox(width: 3),
+                      Text(
+                        _sizeOptions.firstWhere((o) => o.$1 == _sizeFilter).$2,
+                        style: AppTypography.caption().copyWith(fontSize: 12, color: AppColors.accent),
+                      ),
+                    ],
+                  ),
                 ),
-              const SizedBox(width: 4),
-              // Size filter dropdown button
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                onPressed: () => _showSizeFilter(),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.square_favorites_alt, size: 14, color: AppColors.of(AppColors.secondaryLabel)),
-                    const SizedBox(width: 4),
-                    Text(
-                      _sizeOptions.firstWhere((o) => o.$1 == _sizeFilter).$2,
-                      style: AppTypography.caption(color: AppColors.of(AppColors.secondaryLabel)),
-                    ),
-                  ],
+                const SizedBox(width: 6),
+                // Bookmark button inline when there are results
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  onPressed: () => _showBookmarks(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _bookmarks.isEmpty ? CupertinoIcons.heart : CupertinoIcons.heart_fill,
+                        size: 13, color: _bookmarks.isEmpty ? AppColors.of(AppColors.tertiaryLabel) : AppColors.danger,
+                      ),
+                      if (_bookmarks.isNotEmpty) ...[
+                        const SizedBox(width: 3),
+                        Text(
+                          '${_bookmarks.length}',
+                          style: AppTypography.caption().copyWith(fontSize: 12, color: AppColors.danger),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-          child: Row(
-            children: [
-              Icon(CupertinoIcons.doc_text, size: 14, color: AppColors.of(AppColors.tertiaryLabel)),
-              const SizedBox(width: 4),
-              Text(
-                _queryCtrl.text.trim().isEmpty
-                    ? '最新资源  ·  ${_filteredResults.length} 条'
-                    : '「${_queryCtrl.text.trim()}」  ·  ${_filteredResults.length} 条',
-                style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel)),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 6, 20, 0),
+            child: Row(
+              children: [
+                Icon(CupertinoIcons.doc_text, size: 12, color: AppColors.of(AppColors.tertiaryLabel)),
+                const SizedBox(width: 4),
+                Text(
+                  _queryCtrl.text.trim().isEmpty
+                      ? '最新资源  ·  ${_filteredResults.length} 条'
+                      : '「${_queryCtrl.text.trim()}」  ·  ${_filteredResults.length} 条',
+                  style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel)),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -401,13 +403,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   void _showBookmarks() {
-    if (_bookmarks.isEmpty) {
-      _toast('还没有收藏的内容', ok: false);
-      return;
-    }
+    if (_bookmarks.isEmpty) { _toast('还没有收藏的内容', ok: false); return; }
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => CupertinoPageScaffold(
+        backgroundColor: AppColors.of(AppColors.groupedBg),
         navigationBar: CupertinoNavigationBar(
           middle: const Text('收藏夹'),
           trailing: CupertinoButton(
@@ -422,16 +422,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
         ),
         child: SafeArea(
-          child: ListView(
-            children: _allResults.where((r) => _bookmarks.contains(r['fileUrl'])).map((r) {
-              return CupertinoListTile(
-                title: Text((r['code'] ?? '').toString()),
-                subtitle: Text((r['sizeStr'] ?? '').toString()),
-                trailing: const Icon(CupertinoIcons.heart_fill, color: AppColors.danger, size: 18),
-                onTap: () => _addMagnet(r['fileUrl']),
-              );
-            }).toList(),
-          ),
+          child: _bookmarks.isEmpty
+              ? _emptyHint('暂无收藏')
+              : ListView(
+                  children: _allResults.where((r) => _bookmarks.contains(r['fileUrl'])).map((r) {
+                    final code = (r['code'] ?? '').toString();
+                    return CupertinoListTile(
+                      leading: Icon(CupertinoIcons.heart_fill, size: 18, color: AppColors.danger),
+                      title: Text(code, style: AppTypography.body()),
+                      subtitle: Text((r['sizeStr'] ?? '').toString(), style: AppTypography.caption()),
+                      trailing: const Icon(CupertinoIcons.arrow_down_circle, size: 20, color: AppColors.accent),
+                      onTap: () { Navigator.pop(ctx); _addMagnet(r['fileUrl']); },
+                    );
+                  }).toList(),
+                ),
         ),
       ),
     );
@@ -439,14 +443,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Widget _buildBody() {
     switch (_state) {
-      case _OnlineState.idle:
-        return _buildIdle();
-      case _OnlineState.loading:
-        return _buildLoading();
-      case _OnlineState.results:
-        return _buildResults();
-      case _OnlineState.empty:
-        return _emptyHint('没有找到相关结果', icon: CupertinoIcons.search);
+      case _OnlineState.idle: return _buildIdle();
+      case _OnlineState.loading: return _buildLoading();
+      case _OnlineState.results: return _buildResults();
+      case _OnlineState.empty: return _emptyHint('没有找到相关结果', icon: CupertinoIcons.search);
       case _OnlineState.error:
         return _emptyHint(
           '网络请求失败',
@@ -460,38 +460,38 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildIdle() {
-    return ListView(
+    return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-      children: [
-        Row(
-          children: [
-            const Icon(CupertinoIcons.flame, size: 18, color: AppColors.warning),
-            const SizedBox(width: 6),
-            Text('快速筛选', style: AppTypography.sectionHeader()),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 10, runSpacing: 10,
-          children: _filterChips.where((c) => c.isNotEmpty).map((s) => GestureDetector(
-            onTap: () {
-              _queryCtrl.text = s;
-              _queryCtrl.selection = TextSelection.fromPosition(TextPosition(offset: s.length));
-              _runSearch(s);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.of(AppColors.card),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.of(AppColors.separator)),
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(CupertinoIcons.flame_fill, size: 24, color: AppColors.warning),
+          const SizedBox(height: 12),
+          Text('浏览热门', style: AppTypography.cardTitle()),
+          const SizedBox(height: 6),
+          Text('选择标签快速浏览，或直接搜索', style: AppTypography.subtitle(color: AppColors.of(AppColors.tertiaryLabel))),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 10, runSpacing: 10,
+            children: _filterChips.where((c) => c.isNotEmpty).map((s) => GestureDetector(
+              onTap: () {
+                _queryCtrl.text = s;
+                _runSearch(s);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.of(AppColors.card),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.of(AppColors.separator)),
+                ),
+                child: Text(s, style: AppTypography.body().copyWith(fontSize: 15, fontWeight: FontWeight.w500)),
               ),
-              child: Text(s, style: AppTypography.body().copyWith(fontSize: 14)),
-            ),
-          )).toList(),
-        ),
-      ],
+            )).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -499,14 +499,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          sliver: SliverToBoxAdapter(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
                 const CupertinoActivityIndicator(radius: 7),
                 const SizedBox(width: 8),
-                Text('加载中…', style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel))),
+                Text('正在获取最新资源…', style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel))),
               ],
             ),
           ),
@@ -519,14 +519,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Widget _buildResults() {
     final list = _filteredResults;
     if (list.isEmpty) {
-      return _emptyHint('筛选后无匹配结果', icon: CupertinoIcons.slash_circle);
+      return _emptyHint('筛选中没有匹配结果', icon: CupertinoIcons.slash_circle);
     }
     return CustomScrollView(
       controller: _scrollCtrl,
       physics: const BouncingScrollPhysics(),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.72,
@@ -537,22 +537,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             ),
           ),
         ),
-        if (_isLoadingMore)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CupertinoActivityIndicator()),
-            ),
-          )
-        else
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 32),
-              child: Center(
-                child: Text('上滑加载更多', style: TextStyle(color: AppColors.tertiaryLabel, fontSize: 13)),
-              ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            child: Center(
+              child: _isLoadingMore
+                  ? const CupertinoActivityIndicator()
+                  : Text(
+                      list.length >= 30 ? '上滑加载更多' : '',
+                      style: const TextStyle(color: AppColors.tertiaryLabel, fontSize: 13),
+                    ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -622,14 +619,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 else
                   _fallbackCover(),
                 Positioned(
-                  left: 0, right: 0, bottom: 0,
-                  height: 100,
+                  left: 0, right: 0, bottom: 0, height: 100,
                   child: IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
+                          begin: Alignment.bottomCenter, end: Alignment.topCenter,
                           colors: [Colors.black.withValues(alpha: 0.85), Colors.transparent],
                         ),
                       ),
@@ -659,9 +654,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     top: 6, left: 6,
                     child: Container(
                       width: 22, height: 22,
-                      decoration: const BoxDecoration(
-                        color: AppColors.danger, shape: BoxShape.circle,
-                      ),
+                      decoration: const BoxDecoration(color: AppColors.danger, shape: BoxShape.circle),
                       child: const Icon(CupertinoIcons.heart_fill, size: 12, color: Colors.white),
                     ),
                   ),
@@ -701,18 +694,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         backgroundColor: AppColors.of(AppColors.groupedBg),
         navigationBar: CupertinoNavigationBar(
           middle: Text(code, style: const TextStyle(fontSize: 16)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                child: Icon(
-                  isBookmarked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-                  size: 22, color: isBookmarked ? AppColors.danger : AppColors.of(AppColors.tertiaryLabel),
-                ),
-                onPressed: () { _toggleBookmark(magnet); Navigator.pop(ctx); },
-              ),
-            ],
+          trailing: CupertinoButton(
+            padding: EdgeInsets.zero,
+            child: Icon(
+              isBookmarked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+              size: 22, color: isBookmarked ? AppColors.danger : AppColors.of(AppColors.tertiaryLabel),
+            ),
+            onPressed: () { _toggleBookmark(magnet); Navigator.pop(ctx); },
           ),
         ),
         child: SafeArea(
@@ -736,50 +724,36 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(code, style: AppTypography.cardTitle()),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           _metaChip(CupertinoIcons.doc, sizeStr),
-                          if (date.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            _metaChip(CupertinoIcons.calendar, date),
-                          ],
+                          if (date.isNotEmpty) ...[const SizedBox(width: 8), _metaChip(CupertinoIcons.calendar, date)],
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      _actionButton('添加到下载队列', CupertinoIcons.arrow_down_circle, AppColors.accent, () {
-                        Navigator.pop(ctx); _addMagnet(magnet);
-                      }),
-                      const SizedBox(height: 8),
-                      _actionButton('复制磁力链接', CupertinoIcons.doc_on_doc, null, () {
-                        Clipboard.setData(ClipboardData(text: magnet));
-                        _toast('磁力已复制', ok: true);
-                      }),
-                      const SizedBox(height: 8),
-                      _actionButton('下载 .torrent 文件', CupertinoIcons.down_arrow, null, () {
-                        Navigator.pop(ctx); _downloadTorrent(torrentUrl);
-                      }),
+                      const SizedBox(height: 24),
+                      _actionBtn(magnet.isNotEmpty ? '添加到下载队列' : null, CupertinoIcons.arrow_down_circle, AppColors.accent,
+                        () { Navigator.pop(ctx); _addMagnet(magnet); }),
+                      const SizedBox(height: 10),
+                      _actionBtn('复制磁力链接', CupertinoIcons.doc_on_doc, null,
+                        () { Clipboard.setData(ClipboardData(text: magnet)); _toast('磁力已复制', ok: true); }),
+                      const SizedBox(height: 10),
+                      _actionBtn('下载 .torrent 文件', CupertinoIcons.down_arrow, null,
+                        () { Navigator.pop(ctx); _downloadTorrent(torrentUrl); }),
                       if (pageUrl.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _actionButton('在浏览器中打开', CupertinoIcons.globe, null, () async {
+                        const SizedBox(height: 10),
+                        _actionBtn('在浏览器中打开', CupertinoIcons.globe, null, () async {
                           final uri = Uri.tryParse(pageUrl);
                           if (uri != null && await canLaunchUrl(uri)) {
                             await launchUrl(uri, mode: LaunchMode.externalApplication);
                           }
                         }),
                       ],
-                      const SizedBox(height: 8),
-                      _actionButton(
-                        isBookmarked ? '取消收藏' : '收藏',
-                        isBookmarked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-                        isBookmarked ? AppColors.danger : null,
-                        () { _toggleBookmark(magnet); Navigator.pop(ctx); },
-                      ),
                     ],
                   ),
                 ),
@@ -809,7 +783,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _actionButton(String label, IconData icon, Color? color, VoidCallback onTap) {
+  Widget _actionBtn(String? label, IconData icon, Color? color, VoidCallback onTap) {
+    if (label == null) return const SizedBox.shrink();
     return SizedBox(
       width: double.infinity,
       child: CupertinoButton(
@@ -880,10 +855,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) => Container(
-            decoration: BoxDecoration(
-              color: AppColors.of(AppColors.card),
-              borderRadius: BorderRadius.circular(10),
-            ),
+            decoration: BoxDecoration(color: AppColors.of(AppColors.card), borderRadius: BorderRadius.circular(10)),
             child: const SkeletonBar(width: double.infinity, height: double.infinity),
           ),
           childCount: 6,
@@ -894,14 +866,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Widget _emptyHint(String text, {IconData icon = CupertinoIcons.tray, Widget? action}) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: AppColors.of(AppColors.placeholder)),
-          const SizedBox(height: 16),
-          Text(text, style: AppTypography.subtitle(color: AppColors.of(AppColors.tertiaryLabel))),
-          if (action != null) ...[const SizedBox(height: 16), action],
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: AppColors.of(AppColors.placeholder)),
+            const SizedBox(height: 16),
+            Text(text, textAlign: TextAlign.center,
+              style: AppTypography.subtitle(color: AppColors.of(AppColors.tertiaryLabel))),
+            if (action != null) ...[const SizedBox(height: 20), action],
+          ],
+        ),
       ),
     );
   }
