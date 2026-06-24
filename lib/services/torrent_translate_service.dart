@@ -5,7 +5,15 @@ class TranslateService {
   TranslateService._();
   static final TranslateService instance = TranslateService._();
 
-  final _dio = Dio();
+  final _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 15),
+    headers: {
+      'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    },
+  ));
 
   Future<String> toChinese(String text) async {
     if (text.isEmpty) return text;
