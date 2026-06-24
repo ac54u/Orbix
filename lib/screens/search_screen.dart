@@ -214,14 +214,28 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
+  void _scrollToTop() {
+    if (_scrollCtrl.hasClients && _scrollCtrl.position.pixels > 0) {
+      _scrollCtrl.animateTo(0,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    } else {
+      _loadLatest();
+    }
+  }
+
   Widget _buildHeader() {
-    // 搜索结果时搜索栏放在粘性 Tab 里，标题栏只留标题
-    final hasResults = _state == _OnlineState.results && _filteredResults.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       child: Row(
         children: [
-          Expanded(child: Text('141PPV', style: AppTypography.largeTitle())),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_state == _OnlineState.results) _scrollToTop();
+              },
+              child: Text('141PPV', style: AppTypography.largeTitle()),
+            ),
+          ),
           CupertinoButton(
             padding: EdgeInsets.zero,
             child: Icon(
