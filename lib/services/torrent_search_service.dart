@@ -174,6 +174,10 @@ class TorrentSearchService {
 
         final descM = descRE.firstMatch(cardHtml);
         final description = descM?.group(1)?.trim();
+        if (description == null || description.isEmpty) {
+          debugPrint('141ppv desc MISSING for $code');
+          debugPrint('  cardHtml snippet: ${cardHtml.substring(0, cardHtml.length > 300 ? 300 : cardHtml.length)}');
+        }
 
         items.add(ScrapedTorrent(
           code: code,
