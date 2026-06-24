@@ -194,39 +194,39 @@ class TorrentSearchService {
 
       String? desc;
 
-      // 多种匹配模式
-      final patterns = [
-        // 1. "作品詳細" 后的 panel-body
-        RegExp(
-          r'作品詳細[\s\S]*?<div[^>]*class="panel-body"[^>]*>([\s\S]*?)</div>',
-          caseSensitive: false,
-        ),
-        // 2. "商品説明" 区域
-        RegExp(
-          r'商品説明[\s\S]*?<div[^>]*class="[^"]*text[^"]*"[^>]*>([\s\S]*?)</div>',
-          caseSensitive: false,
-        ),
-        // 3. meta description
-        RegExp(
-          r'<meta[^>]*name="description"[^>]*content="([^"]*)"',
-          caseSensitive: false,
-        ),
-        // 4. og:description
-        RegExp(
-          r'<meta[^>]*property="og:description"[^>]*content="([^"]*)"',
-          caseSensitive: false,
-        ),
-      ];
+      // 1. 从卡片的可见文本提取
+      final visibleRE = RegExp(
+        r'<p\s+class="level\s+has-text-grey-dark">\s*(.*?)\s*</p>',
+        caseSensitive: false,
+      );
+      final visibleM = visibleRE.firstMatch(html);
+      if (visibleM != null) {
+        desc = visibleM.group(1)?.trim();
+      }
 
-      for (final re in patterns) {
-        final m = re.firstMatch(html);
-        if (m != null) {
-          desc = m.group(1)?.trim();
-          if (desc != null) {
-            desc = desc.replaceAll(RegExp(r'<[^>]*>'), '');
-            desc = desc.replaceAll(RegExp(r'\s+'), ' ').trim();
+      // 2. 降级：meta description（去掉前缀）
+      if (desc == null || desc.isEmpty) {
+        final metaREs = [
+          RegExp(
+            r'<meta[^>]*name="description"[^>]*content="([^"]*)"',
+            caseSensitive: false,
+          ),
+          RegExp(
+            r'<meta[^>]*property="og:description"[^>]*content="([^"]*)"',
+            caseSensitive: false,
+          ),
+        ];
+        for (final re in metaREs) {
+          final m = re.firstMatch(html);
+          if (m != null) {
+            final raw = m.group(1)?.trim() ?? '';
+            // 去掉 "CODE (SIZE) - TYPE - " 前缀
+            desc = raw.replaceFirst(RegExp(
+              r'^[^(]+\([^)]+\)\s*-\s*[^-]+-\s*',
+              caseSensitive: false,
+            ), '');
+            if (desc.isNotEmpty) break;
           }
-          if (desc != null && desc.isNotEmpty) break;
         }
       }
 
