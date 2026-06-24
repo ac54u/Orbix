@@ -7,7 +7,6 @@ struct TorrentListView: View {
     @State private var globalUpSpeed: Int64 = 0
     @State private var showAddTorrent = false
     @State private var isLoading = true
-    @State private var errorMessage: String? = nil
 
     enum TorrentFilter: String, CaseIterable {
         case all = "全部"
@@ -137,12 +136,10 @@ struct TorrentListView: View {
                     self.torrents = list
                     self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
                     self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
-                    self.errorMessage = nil
                     self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = String(describing: error)
                     self.isLoading = false
                 }
             }
