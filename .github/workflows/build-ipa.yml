@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Setup Flutter (with cache)
         uses: subosito/flutter-action@v2
@@ -31,7 +31,7 @@ jobs:
           cache: true
 
       - name: Cache Flutter Pub Dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /Users/runner/.pub-cache
           key: flutter-pub-${{ hashFiles('pubspec.lock') }}
@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache CocoaPods
         id: cache-pods
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ios/Pods
@@ -78,7 +78,7 @@ jobs:
           zip -r Orbix.ipa Payload
 
       - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: Orbix-Unsigned-IPA
           path: build/ios/iphoneos/Orbix.ipa
