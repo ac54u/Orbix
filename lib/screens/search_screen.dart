@@ -214,28 +214,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  void _scrollToTop() {
-    if (_scrollCtrl.hasClients && _scrollCtrl.position.pixels > 0) {
-      _scrollCtrl.animateTo(0,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-    } else {
-      _loadLatest();
-    }
-  }
-
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (_state == _OnlineState.results) _scrollToTop();
-              },
-              child: Text('141PPV', style: AppTypography.largeTitle()),
-            ),
-          ),
+          const Spacer(),
           CupertinoButton(
             padding: EdgeInsets.zero,
             child: Icon(
