@@ -13,11 +13,11 @@ struct WelcomeView: View {
                 GlowingLogo(size: 88)
 
                 Text("Orbix")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
 
                 Text("qBittorrent 客户端")
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.secondary)
 
                 VStack(spacing: 12) {
@@ -48,9 +48,9 @@ struct WelcomeView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 18, weight: .semibold))
                         Text("开始配置")
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.system(size: 16, weight: .bold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -84,17 +84,17 @@ private struct FeatureTile: View {
                     .frame(width: 48, height: 48)
 
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(AppColors.accent)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.primary)
 
                 Text(subtitle)
-                    .font(.system(size: 14, weight: .regular))
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
