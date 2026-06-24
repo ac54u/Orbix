@@ -119,10 +119,12 @@ class TorrentSearchService {
   /// 解析列表页 HTML，提取每个种子条目。
   /// 以 magnet 链接为锚点，从 magnet 位置往回找到最近 <img>，
   /// 避免页面顶部 logo 被当作第一个条目的缩略图。
+  /// 解析列表页 HTML，提取每个种子条目。
+  /// 以 magnet 链接定位条目，从 magnet 往前找到 card 开头（<div class="card mb-3">）
+  /// 作为上下文左边界，确保提取到完整条目信息（不受描述长度影响）。
   List<ScrapedTorrent> _parseList(String html) {
     final items = <ScrapedTorrent>[];
 
-    // 以 magnet 链接定位每个条目（唯一标识）
     final magnetRE = RegExp(
       r'<a[^>]*\s+href="(magnet:\?xt=urn:btih:[^"]+)"',
       caseSensitive: false,
@@ -132,8 +134,9 @@ class TorrentSearchService {
       final magnet = m.group(1) ?? '';
       if (magnet.isEmpty) continue;
 
-      // 从 magnet 往前取一段上下文，取最近（最后）一个 <img>
-      final ctxStart = (m.start - 800).clamp(0, html.length);
+      // 动态回看至当前 card 开头，确保上下文包含所有字段
+      final cardStart = html.lastIndexOf('<div class="card mb-3">', m.start);
+      final ctxStart = cardStart >= 0 ? cardStart : (m.start - 3000).clamp(0, html.length);
       final ctx = html.substring(ctxStart, m.end);
 
       final imgRE = RegExp(
@@ -143,7 +146,6 @@ class TorrentSearchService {
       final imgMatches = imgRE.allMatches(ctx).toList();
       final thumb = imgMatches.isNotEmpty ? imgMatches.last.group(1) ?? '' : '';
 
-      // 提取 torrent 链接、code、标题
       final torRE = RegExp(
         r'<a[^>]*\s+href="(/torrent/([^"]+))"[^>]*>([^<]+)</a>',
         caseSensitive: false,
@@ -154,7 +156,6 @@ class TorrentSearchService {
       final code = torM.group(2) ?? '';
       final nameFromH5 = torM.group(4) ?? '';
 
-      // 提取日期
       final dateRE = RegExp(
         r'<a[^>]*\s+href="(/date/[^"]*)"[^>]*>([^<]+)</a>',
         caseSensitive: false,
@@ -162,7 +163,6 @@ class TorrentSearchService {
       final dateM = dateRE.firstMatch(ctx);
       final date = dateM?.group(2) ?? '';
 
-      // 提取大小
       final size = _extractSize(ctx, 0, ctx.length) ?? '';
 
       items.add(ScrapedTorrent(
