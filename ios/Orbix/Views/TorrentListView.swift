@@ -7,6 +7,7 @@ struct TorrentListView: View {
     @State private var globalUpSpeed: Int64 = 0
     @State private var showAddTorrent = false
     @State private var isLoading = true
+    @State private var errorMessage: String? = nil
 
     enum TorrentFilter: String, CaseIterable {
         case all = "全部"
@@ -32,7 +33,46 @@ struct TorrentListView: View {
                         SkeletonBar(height: 16)
                     }
                     .padding(.horizontal, 20)
-                } else if filteredTorrents.isEmpty {
+                }
+                else if let errorMsg = errorMessage {
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 56))
+                            .foregroundColor(AppColors.danger)
+
+                        Text("数据获取失败")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.primary)
+
+                        ScrollView {
+                            Text(errorMsg)
+                                .font(.system(size: 13, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                                .padding()
+                        }
+                        .frame(maxHeight: 150)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.black.opacity(0.1))
+                        )
+                        .padding(.horizontal, 24)
+
+                        Button {
+                            isLoading = true
+                            errorMessage = nil
+                            refresh()
+                        } label: {
+                            Text("重试")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 10)
+                                .background(Capsule().fill(AppColors.accent))
+                        }
+                    }
+                }
+                else if filteredTorrents.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "square.stack")
                             .font(.system(size: 48))
@@ -83,7 +123,9 @@ struct TorrentListView: View {
                 }
             }
             .onAppear { refresh() }
-            .onReceive(timer) { _ in refresh() }
+            .onReceive(timer) { _ in
+                if errorMessage == nil { refresh() }
+            }
             .sheet(isPresented: $showAddTorrent) {
                 AddTorrentView()
             }
@@ -143,13 +185,22 @@ struct TorrentListView: View {
 
     private func refresh() {
         Task {
-            let list = (try? await QBitApi.shared.getTorrents()) ?? []
-            let transfer = (try? await QBitApi.shared.getTransferInfo())
-            await MainActor.run {
-                torrents = list
-                globalDlSpeed = transfer?.dlInfoSpeed ?? 0
-                globalUpSpeed = transfer?.upInfoSpeed ?? 0
-                isLoading = false
+            do {
+                let list = try await QBitApi.shared.getTorrents()
+                let transfer = try? await QBitApi.shared.getTransferInfo()
+
+                await MainActor.run {
+                    self.torrents = list
+                    self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
+                    self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
+                    self.errorMessage = nil
+                    self.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = String(describing: error)
+                    self.isLoading = false
+                }
             }
         }
     }
