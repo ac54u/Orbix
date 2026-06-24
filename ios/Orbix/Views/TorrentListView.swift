@@ -126,6 +126,17 @@ struct TorrentListView: View {
         .background(.ultraThinMaterial)
     }
 
+    private var filteredTorrents: [TorrentInfo] {
+        switch filter {
+        case .all: return torrents
+        case .downloading: return torrents.filter { $0.statusBadge == .downloading || $0.statusBadge == .metaDL }
+        case .seeding: return torrents.filter { $0.statusBadge == .uploading || $0.statusBadge == .stalledUP }
+        case .active: return torrents.filter { $0.isActive }
+        case .paused: return torrents.filter { $0.statusBadge.isPaused }
+        case .completed: return torrents.filter { $0.isCompleted }
+        }
+    }
+
     private func refresh() {
         Task {
             do {
