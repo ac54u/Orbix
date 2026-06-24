@@ -44,8 +44,7 @@ class ScrapedTorrent {
 
 /// 141ppv.com 爬虫搜索服务。
 ///
-/// 网站无原生搜索框，按「最新」列表页（/new?page=N）抓取，
-/// 客户端按关键字过滤标题/代码，分页加载更多。
+/// 按「最新」列表页（/new?page=N）抓取，客户端按关键字过滤标题/代码。
 class TorrentSearchService {
   TorrentSearchService._();
   static final TorrentSearchService instance = TorrentSearchService._();
@@ -53,13 +52,16 @@ class TorrentSearchService {
   static const String _base = 'https://www.141ppv.com';
 
   final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 20),
     headers: {
       'User-Agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) '
-          'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
-      'Accept': 'text/html,application/xhtml+xml',
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
+      'Referer': '$_base/',
     },
   ));
 
@@ -76,7 +78,6 @@ class TorrentSearchService {
     final results = <ScrapedTorrent>[];
     final seen = <String>{};
 
-    // 并发抓取：每批 5 页，避免压垮对方服务器
     const batchSize = 5;
     for (var batch = startPage; batch < startPage + pages; batch += batchSize) {
       final end = (batch + batchSize - 1).clamp(batch, startPage + pages - 1);
@@ -102,7 +103,6 @@ class TorrentSearchService {
     return results;
   }
 
-  /// 抓取单页，失败返回 null。
   Future<List<ScrapedTorrent>?> _fetchPage(int page) async {
     final url = page == 1 ? '$_base/new' : '$_base/new?page=$page';
     try {
@@ -116,68 +116,66 @@ class TorrentSearchService {
     return null;
   }
 
-  /// 解析列表页 HTML，提取每个种子条目。
-  /// 以 magnet 链接为锚点，从 magnet 位置往回找到最近 <img>，
-  /// 避免页面顶部 logo 被当作第一个条目的缩略图。
-  /// 解析列表页 HTML，提取每个种子条目。
-  /// 以 magnet 链接定位条目，从 magnet 往前找到 card 开头（<div class="card mb-3">）
-  /// 作为上下文左边界，确保提取到完整条目信息（不受描述长度影响）。
   List<ScrapedTorrent> _parseList(String html) {
     final items = <ScrapedTorrent>[];
-
+    final cardRE = RegExp(r'<div\s+class="card\s+mb-3">', caseSensitive: false);
     final magnetRE = RegExp(
-      r'<a[^>]*\s+href="(magnet:\?xt=urn:btih:[^"]+)"',
+      r'href="(magnet:\?xt=urn:btih:[^"]+)"',
+      caseSensitive: false,
+    );
+    final thumbRE = RegExp(
+      r'<img[^>]*\s+src="([^"]+)"[^>]*>',
+      caseSensitive: false,
+    );
+    final codeRE = RegExp(
+      r'<a[^>]*\s+href="/torrent/([^"]+)"[^>]*>([^<]+)</a>',
+      caseSensitive: false,
+    );
+    final dateRE = RegExp(
+      r'<a[^>]*\s+href="/date/([^"]*)"[^>]*>([^<]+)</a>',
+      caseSensitive: false,
+    );
+    final sizeRE = RegExp(
+      r'(\d+\.?\d*\s*(?:GB|MB|TB|KB))',
       caseSensitive: false,
     );
 
-    for (final m in magnetRE.allMatches(html)) {
+    final cardMatches = cardRE.allMatches(html).toList();
+    for (int i = 0; i < cardMatches.length; i++) {
+      final cardStart = cardMatches[i].start;
+      final cardEnd = (i + 1 < cardMatches.length)
+          ? cardMatches[i + 1].start
+          : html.length;
+      final cardHtml = html.substring(cardStart, cardEnd);
+
       try {
-        final magnet = m.group(1) ?? '';
-        if (magnet.isEmpty) continue;
+        final magnetM = magnetRE.firstMatch(cardHtml);
+        if (magnetM == null) continue;
+        final magnet = magnetM.group(1)!;
 
-        // 动态回看至当前 card 开头，确保上下文包含所有字段
-        final cardStart = html.lastIndexOf('<div class="card mb-3">', m.start);
-        final ctxStart = cardStart >= 0 ? cardStart : (m.start - 3000).clamp(0, html.length);
-        if (ctxStart > m.end) continue;
-        final ctx = html.substring(ctxStart, m.end);
+        final thumbM = thumbRE.firstMatch(cardHtml);
+        final thumb = (thumbM != null) ? thumbM.group(1)! : '';
 
-        final imgRE = RegExp(
-          r'<img[^>]*\s+src="([^"]+)"[^>]*>',
-          caseSensitive: false,
-        );
-        final imgMatches = imgRE.allMatches(ctx).toList();
-        final thumb = imgMatches.isNotEmpty ? imgMatches.last.group(1) ?? '' : '';
+        final codeM = codeRE.firstMatch(cardHtml);
+        if (codeM == null) continue;
+        final code = codeM.group(1)!.trim();
+        final title = codeM.group(2)!.trim();
 
-        final torRE = RegExp(
-          r'<a[^>]*\s+href="(/torrent/([^"]+))"[^>]*>([^<]+)</a>',
-          caseSensitive: false,
-        );
-        final torM = torRE.firstMatch(ctx);
-        if (torM == null) continue;
-        final torrentPath = torM.group(1) ?? '';
-        final code = torM.group(2) ?? '';
-        final nameFromH5 = torM.group(4) ?? '';
+        final dateM = dateRE.firstMatch(cardHtml);
+        final date = (dateM != null) ? dateM.group(2)!.trim() : '';
 
-        final dateRE = RegExp(
-          r'<a[^>]*\s+href="(/date/[^"]*)"[^>]*>([^<]+)</a>',
-          caseSensitive: false,
-        );
-        final dateM = dateRE.firstMatch(ctx);
-        final date = dateM?.group(2) ?? '';
-
-        final size = _extractSize(ctx, 0, ctx.length) ?? '';
+        final sizeM = sizeRE.firstMatch(cardHtml);
+        final size = (sizeM != null) ? sizeM.group(1)!.trim() : '';
 
         items.add(ScrapedTorrent(
-          code: code.trim(),
-          title: nameFromH5.trim().isNotEmpty
-              ? nameFromH5.trim()
-              : code.trim(),
+          code: code,
+          title: title.isNotEmpty ? title : code,
           size: size,
-          date: date.trim(),
+          date: date,
           thumbnail: thumb.startsWith('http') ? thumb : null,
           magnet: magnet,
           torrentUrl: '$_base/download/$code.torrent',
-          pageUrl: '$_base$torrentPath',
+          pageUrl: '$_base/torrent/$code',
         ));
       } catch (e) {
         debugPrint('141ppv parse item error: $e');
@@ -185,21 +183,6 @@ class TorrentSearchService {
     }
 
     return items;
-  }
-
-  /// 在 magnet 匹配区间内提取文件大小。
-  String? _extractSize(String html, int start, int end) {
-    // h5 内通常是 "CODE 5.3 GB" 格式
-    final snippet = html.substring(
-      (start - 300).clamp(0, html.length),
-      end,
-    );
-    final sizeRE = RegExp(
-      r'(\d+\.?\d*\s*(GB|MB|TB|KB))',
-      caseSensitive: false,
-    );
-    final m = sizeRE.firstMatch(snippet);
-    return m?.group(1)?.trim();
   }
 
   /// 抓取详情页并提取作品简介，自动翻译为中文。
