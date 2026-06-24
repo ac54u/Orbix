@@ -180,7 +180,7 @@ private struct TorrentRow: View {
 
                         Spacer()
 
-                        Text(formatBytes(torrent.totalSize))
+                        Text(formatBytes(torrent.size))
                             .caption(AppColors.tertiaryLabel)
                     }
 
