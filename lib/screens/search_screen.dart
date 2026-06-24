@@ -879,7 +879,7 @@ class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_TabHeaderDelegate old) => child != old.child;
 }
 
-// ── 全屏模式下 Overlay ──
+// ── 全屏模式下极简 Overlay ──
 class _FullScreenOverlay extends StatelessWidget {
   final Map<String, dynamic> item;
   final void Function(String url) onAdd;
@@ -887,7 +887,10 @@ class _FullScreenOverlay extends StatelessWidget {
   final bool isBookmarked;
 
   const _FullScreenOverlay({
-    required this.item, required this.onAdd, required this.onBookmark, required this.isBookmarked,
+    required this.item,
+    required this.onAdd,
+    required this.onBookmark,
+    required this.isBookmarked,
   });
 
   @override
@@ -901,52 +904,89 @@ class _FullScreenOverlay extends StatelessWidget {
       left: 0, right: 0, bottom: 0,
       child: Container(
         padding: EdgeInsets.only(
-          left: 16, right: 16, top: 12,
-          bottom: MediaQuery.of(context).padding.bottom + 12,
+          left: 20, right: 20, top: 40,
+          bottom: MediaQuery.of(context).padding.bottom + 20,
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter, end: Alignment.topCenter,
-            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.85), Colors.black.withValues(alpha: 0.5), Colors.transparent],
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
           top: false,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(code, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text('$sizeStr${date.isNotEmpty ? '  ·  $date' : ''}',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+                    Text(
+                      code,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$sizeStr${date.isNotEmpty ? '  ·  $date' : ''}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
-              CupertinoButton(
-                padding: const EdgeInsets.all(8),
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(20),
-                onPressed: () => onAdd(magnet),
-                child: const Icon(CupertinoIcons.arrow_down_circle, size: 20, color: Colors.white),
+              const SizedBox(width: 16),
+              _buildCircleButton(
+                icon: CupertinoIcons.arrow_down,
+                bgColor: AppColors.accent,
+                iconColor: Colors.white,
+                onTap: () => onAdd(magnet),
               ),
-              const SizedBox(width: 8),
-              CupertinoButton(
-                padding: const EdgeInsets.all(8),
-                color: isBookmarked ? AppColors.danger : Colors.white24,
-                borderRadius: BorderRadius.circular(20),
-                onPressed: () => onBookmark(magnet),
-                child: Icon(
-                  isBookmarked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-                  size: 20, color: Colors.white,
-                ),
+              const SizedBox(width: 12),
+              _buildCircleButton(
+                icon: isBookmarked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                bgColor: isBookmarked
+                    ? AppColors.danger.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.18),
+                iconColor: isBookmarked ? AppColors.danger : Colors.white,
+                onTap: () => onBookmark(magnet),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    required Color bgColor,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: CupertinoButton(
+        padding: EdgeInsets.zero,
+        color: bgColor,
+        borderRadius: BorderRadius.circular(22),
+        onPressed: onTap,
+        child: Icon(icon, size: 20, color: iconColor),
       ),
     );
   }
