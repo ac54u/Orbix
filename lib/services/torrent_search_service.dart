@@ -117,34 +117,53 @@ class TorrentSearchService {
   }
 
   /// 解析列表页 HTML，提取每个种子条目。
+  /// 以 magnet 链接为锚点，从 magnet 位置往回找到最近 <img>，
+  /// 避免页面顶部 logo 被当作第一个条目的缩略图。
   List<ScrapedTorrent> _parseList(String html) {
     final items = <ScrapedTorrent>[];
 
-    // 每个种子条目：从 magnet 链接定位，向前搜索图片/代码，向后收尾。
-    // 正则：匹配 <a href="magnet:?xt=urn:btih:..."> 及其上下文。
+    // 以 magnet 链接定位每个条目（唯一标识）
     final magnetRE = RegExp(
-      r'<img[^>]*\s+src="([^"]+)"[^>]*>'
-      r'[\s\S]*?'
-      r'<a[^>]*\s+href="(/torrent/([^"]+))"[^>]*>([^<]+)</a>'
-      r'[\s\S]*?'
-      r'<a[^>]*\s+href="(/date/[^"]*)"[^>]*>([^<]+)</a>'
-      r'[\s\S]*?'
       r'<a[^>]*\s+href="(magnet:\?xt=urn:btih:[^"]+)"',
       caseSensitive: false,
     );
 
     for (final m in magnetRE.allMatches(html)) {
-      final thumb = m.group(1) ?? '';
-      final torrentPath = m.group(2) ?? '';  // /torrent/CODE
-      final code = m.group(3) ?? '';
-      final nameFromH5 = m.group(4) ?? '';
-      final date = m.group(6) ?? '';
-      final magnet = m.group(7) ?? '';
+      final magnet = m.group(1) ?? '';
+      if (magnet.isEmpty) continue;
 
-      if (code.isEmpty || magnet.isEmpty) continue;
+      // 从 magnet 往前取一段上下文，取最近（最后）一个 <img>
+      final ctxStart = (m.start - 800).clamp(0, html.length);
+      final ctx = html.substring(ctxStart, m.end);
 
-      // 提取 SIZE：在 h5 的 <a> 之后、</h5> 之前。
-      final size = _extractSize(html, m.start, m.end) ?? '';
+      final imgRE = RegExp(
+        r'<img[^>]*\s+src="([^"]+)"[^>]*>',
+        caseSensitive: false,
+      );
+      final imgMatches = imgRE.allMatches(ctx).toList();
+      final thumb = imgMatches.isNotEmpty ? imgMatches.last.group(1) ?? '' : '';
+
+      // 提取 torrent 链接、code、标题
+      final torRE = RegExp(
+        r'<a[^>]*\s+href="(/torrent/([^"]+))"[^>]*>([^<]+)</a>',
+        caseSensitive: false,
+      );
+      final torM = torRE.firstMatch(ctx);
+      if (torM == null) continue;
+      final torrentPath = torM.group(1) ?? '';
+      final code = torM.group(2) ?? '';
+      final nameFromH5 = torM.group(4) ?? '';
+
+      // 提取日期
+      final dateRE = RegExp(
+        r'<a[^>]*\s+href="(/date/[^"]*)"[^>]*>([^<]+)</a>',
+        caseSensitive: false,
+      );
+      final dateM = dateRE.firstMatch(ctx);
+      final date = dateM?.group(2) ?? '';
+
+      // 提取大小
+      final size = _extractSize(ctx, 0, ctx.length) ?? '';
 
       items.add(ScrapedTorrent(
         code: code.trim(),
@@ -185,36 +204,53 @@ class TorrentSearchService {
       if (resp.data is! String) return null;
       final html = resp.data as String;
 
-      // 在 "作品詳細" 后的 panel-body 找描述
-      final re = RegExp(
-        r'作品詳細[\s\S]*?<div[^>]*class="panel-body"[^>]*>([\s\S]*?)</div>',
-        caseSensitive: false,
-      );
-      final m = re.firstMatch(html);
       String? desc;
-      if (m != null) {
-        desc = m.group(1)?.trim();
-        if (desc != null) {
-          desc = desc.replaceAll(RegExp(r'<[^>]*>'), '');
-          desc = desc.replaceAll(RegExp(r'\s+'), ' ').trim();
-        }
-      }
 
-      if (desc == null || desc.isEmpty) {
-        // Fallback: og:description
-        final ogRE = RegExp(
+      // 多种匹配模式
+      final patterns = [
+        // 1. "作品詳細" 后的 panel-body
+        RegExp(
+          r'作品詳細[\s\S]*?<div[^>]*class="panel-body"[^>]*>([\s\S]*?)</div>',
+          caseSensitive: false,
+        ),
+        // 2. "商品説明" 区域
+        RegExp(
+          r'商品説明[\s\S]*?<div[^>]*class="[^"]*text[^"]*"[^>]*>([\s\S]*?)</div>',
+          caseSensitive: false,
+        ),
+        // 3. meta description
+        RegExp(
+          r'<meta[^>]*name="description"[^>]*content="([^"]*)"',
+          caseSensitive: false,
+        ),
+        // 4. og:description
+        RegExp(
           r'<meta[^>]*property="og:description"[^>]*content="([^"]*)"',
           caseSensitive: false,
-        );
-        final ogM = ogRE.firstMatch(html);
-        desc = ogM?.group(1)?.trim();
+        ),
+      ];
+
+      for (final re in patterns) {
+        final m = re.firstMatch(html);
+        if (m != null) {
+          desc = m.group(1)?.trim();
+          if (desc != null) {
+            desc = desc.replaceAll(RegExp(r'<[^>]*>'), '');
+            desc = desc.replaceAll(RegExp(r'\s+'), ' ').trim();
+          }
+          if (desc != null && desc.isNotEmpty) break;
+        }
       }
 
       if (desc == null || desc.isEmpty) return null;
 
-      // 翻译为中文
-      final translated = await TranslateService.instance.toChinese(desc);
-      return translated;
+      // 翻译为中文，失败则回退原文
+      try {
+        final translated = await TranslateService.instance.toChinese(desc);
+        return translated;
+      } catch (_) {
+        return desc;
+      }
     } catch (e) {
       debugPrint('fetchDescription error: $e');
       return null;

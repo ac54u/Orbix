@@ -20,6 +20,8 @@ import '../widgets/toast.dart';
 
 enum _OnlineState { idle, loading, results, empty, error }
 
+enum _DescState { idle, loading, done }
+
 class Debouncer {
   final int milliseconds;
   Timer? _timer;
@@ -50,15 +52,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _isLoadingMore = false;
 
   String _activeTab = '';
-  String _sizeFilter = 'all';
   final Set<String> _bookmarks = {};
 
   static const _tabs = [''];
-  static const _sizeOptions = [
-    ('all', '全部'), ('small', '<1 GB'), ('medium', '1-3 GB'),
-    ('large', '3-5 GB'), ('xlarge', '5 GB+'),
-  ];
-
   static final _cardTween = Tween(begin: 0.0, end: 1.0);
   static const _cardDuration = Duration(milliseconds: 300);
   late final AnimationController _shimmerCtrl;
@@ -158,18 +154,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     if (_activeTab.isNotEmpty) {
       list = list.where((r) => (r['code'] ?? '').toString().startsWith(_activeTab)).toList();
     }
-    _filteredResults = list.where(_sizeFilterMatch).toList();
-  }
-
-  bool _sizeFilterMatch(Map r) {
-    final m = RegExp(r'([\d.]+)\s*(GB|MB|TB)', caseSensitive: false).firstMatch((r['sizeStr'] ?? '').toString());
-    if (m == null) return _sizeFilter == 'all';
-    final num = double.tryParse(m.group(1)!) ?? 0;
-    final gb = switch (m.group(2)!.toUpperCase()) { 'TB' => num * 1000, 'MB' => num / 1000, _ => num };
-    return switch (_sizeFilter) {
-      'small' => gb < 1, 'medium' => gb >= 1 && gb < 3,
-      'large' => gb >= 3 && gb < 5, 'xlarge' => gb >= 5, _ => true,
-    };
+    _filteredResults = list.toList();
   }
 
   Map<String, dynamic> _toResultMap(ScrapedTorrent item) => {
@@ -434,22 +419,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ),
                   ),
-                // 大小筛选
-                CupertinoButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  onPressed: () => _showSizeFilter(),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(CupertinoIcons.square_favorites_alt, size: 12, color: AppColors.accent),
-                      const SizedBox(width: 2),
-                      Text(
-                        _sizeOptions.firstWhere((o) => o.$1 == _sizeFilter).$2,
-                        style: AppTypography.caption().copyWith(fontSize: 11, color: AppColors.accent),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -602,22 +571,21 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) {
+        _DescState descState = _DescState.idle;
         String? localDesc;
         final fileName = (r['fileName'] ?? '').toString();
 
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            if (localDesc == null && pageUrl.isNotEmpty) {
-              localDesc = '';
+            if (descState == _DescState.idle && pageUrl.isNotEmpty) {
+              descState = _DescState.loading;
               TorrentSearchService.instance.fetchDescription(pageUrl).then((desc) {
                 setSheetState(() {
-                  localDesc = desc ?? '';
-                  r['description'] = localDesc;
+                  localDesc = desc;
+                  descState = _DescState.done;
                 });
               });
             }
-
-            final loading = localDesc == '';
 
             return CupertinoPageScaffold(
               backgroundColor: AppColors.of(AppColors.groupedBg),
@@ -663,13 +631,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               if (date.isNotEmpty) ...[const SizedBox(width: 8), _metaChip(CupertinoIcons.calendar, date)],
                             ]),
                             const SizedBox(height: 12),
-                            if (loading)
+                            if (descState == _DescState.loading)
                               Row(children: [
                                 const CupertinoActivityIndicator(radius: 6),
                                 const SizedBox(width: 6),
                                 Text('加载作品简介…', style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel))),
                               ])
-                            else if (localDesc?.isNotEmpty == true)
+                            else if (descState == _DescState.done && localDesc?.isNotEmpty == true)
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(12),
@@ -743,21 +711,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       ),
     ),
   );
-
-  void _showSizeFilter() {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        title: const Text('按大小筛选'),
-        actions: _sizeOptions.map((o) => CupertinoActionSheetAction(
-          isDefaultAction: o.$1 == _sizeFilter,
-          onPressed: () { Navigator.pop(ctx); setState(() { _sizeFilter = o.$1; _applyFilters(); }); },
-          child: Text(o.$2),
-        )).toList(),
-        cancelButton: CupertinoActionSheetAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-      ),
-    );
-  }
 
   void _showBookmarks() {
     if (_bookmarks.isEmpty) { _toast('还没有收藏的内容', ok: false); return; }
