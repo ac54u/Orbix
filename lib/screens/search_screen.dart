@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/qbit_api.dart';
 import '../services/torrent_search_service.dart';
@@ -575,7 +574,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final thumb = (r['thumbnail'] ?? '').toString();
     final date = (r['date'] ?? '').toString();
     final magnet = (r['fileUrl'] ?? '').toString();
-    final pageUrl = (r['pageUrl'] ?? '').toString();
     final torrentUrl = (r['torrentUrl'] ?? '').toString();
     final isBookmarked = _bookmarks.contains(magnet);
 
@@ -693,23 +691,24 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 child: Text('暂无简介', style: AppTypography.caption(color: AppColors.of(AppColors.tertiaryLabel))),
                               ),
                             const SizedBox(height: 16),
-                            _actionBtn('添加到下载队列', CupertinoIcons.arrow_down_circle, AppColors.accent,
-                              () { Navigator.pop(context); _addMagnet(magnet); }),
+                            _actionBtn(
+                              label: '添加到下载队列',
+                              icon: CupertinoIcons.arrow_down_circle_fill,
+                              primary: true,
+                              onTap: () { Navigator.pop(context); _addMagnet(magnet); },
+                            ),
                             const SizedBox(height: 10),
-                            _actionBtn('复制磁力链接', CupertinoIcons.doc_on_doc, null,
-                              () { Clipboard.setData(ClipboardData(text: magnet)); _toast('磁力已复制', ok: true); }),
+                            _actionBtn(
+                              label: '复制磁力链接',
+                              icon: CupertinoIcons.doc_on_doc,
+                              onTap: () { Clipboard.setData(ClipboardData(text: magnet)); _toast('磁力已复制', ok: true); },
+                            ),
                             const SizedBox(height: 10),
-                            _actionBtn('下载 .torrent 文件', CupertinoIcons.down_arrow, null,
-                              () { Navigator.pop(context); _downloadTorrent(torrentUrl); }),
-                            if (pageUrl.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              _actionBtn('在浏览器中打开', CupertinoIcons.globe, null, () async {
-                                final uri = Uri.tryParse(pageUrl);
-                                if (uri != null && await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                }
-                              }),
-                            ],
+                            _actionBtn(
+                              label: '下载 .torrent 文件',
+                              icon: CupertinoIcons.arrow_down_doc,
+                              onTap: () { Navigator.pop(context); _downloadTorrent(torrentUrl); },
+                            ),
                           ],
                         ),
                       ),
@@ -737,22 +736,56 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     ),
   );
 
-  Widget _actionBtn(String label, IconData icon, Color? color, VoidCallback onTap) => SizedBox(
-    width: double.infinity,
-    child: CupertinoButton(
-      onPressed: onTap,
-      color: color ?? AppColors.of(AppColors.card),
-      borderRadius: BorderRadius.circular(10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: color ?? AppColors.accent),
-          const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: color ?? AppColors.accent, fontSize: 15)),
-        ],
+  Widget _actionBtn({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool primary = false,
+  }) {
+    if (primary) {
+      return SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: CupertinoButton(
+          onPressed: onTap,
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(label, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      height: 46,
+      child: CupertinoButton(
+        onPressed: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          height: 46,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.of(AppColors.separator), width: 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Text(label, style: TextStyle(color: AppColors.accent, fontSize: 15, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   void _showBookmarks() {
     if (_bookmarks.isEmpty) { _toast('还没有收藏的内容', ok: false); return; }
