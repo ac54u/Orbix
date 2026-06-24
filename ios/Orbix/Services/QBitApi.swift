@@ -104,8 +104,11 @@ actor QBitApi {
             }
 
             if httpResp.statusCode == 200 {
-                if let setCookie = httpResp.allHeaderFields["Set-Cookie"] as? String {
-                    sessionCookie = setCookie
+                if let setCookie = httpResp.value(forHTTPHeaderField: "Set-Cookie"),
+                   let sid = setCookie.split(separator: ";").first {
+                    sessionCookie = String(sid)
+                } else {
+                    sessionCookie = nil
                 }
                 return .ok
             } else if httpResp.statusCode == 403 {

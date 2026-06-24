@@ -142,7 +142,10 @@ struct TorrentListView: View {
                     isLoading = false
                 }
             } catch {
-                await MainActor.run { isLoading = false }
+                await MainActor.run {
+                    isLoading = false
+                    print("API error: \(error.localizedDescription)")
+                }
             }
         }
     }
