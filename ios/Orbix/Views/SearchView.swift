@@ -115,7 +115,7 @@ struct SearchView: View {
                 if results.isEmpty {
                     gridSkeleton
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 10) {
                         ForEach(results) { torrent in
                             TorrentCard(torrent: torrent, isBookmarked: bookmarks.contains(torrent.code))
                                 .onTapGesture { selectedTorrent = torrent }
@@ -144,7 +144,7 @@ struct SearchView: View {
     // MARK: - Results
     private var resultsView: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 10) {
                 ForEach(results) { torrent in
                     TorrentCard(torrent: torrent, isBookmarked: bookmarks.contains(torrent.code))
                         .onTapGesture { selectedTorrent = torrent }
@@ -258,7 +258,7 @@ struct SearchView: View {
 
     // MARK: - Shared Components
     private func emptyHint(_ text: String, icon: String, isError: Bool = false) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Image(systemName: icon).font(.system(size: 48))
                 .foregroundColor(isError ? AppColors.danger : AppColors.placeholder)
             Text(text).subtitle(isError ? AppColors.danger : AppColors.secondaryLabel)
@@ -266,7 +266,7 @@ struct SearchView: View {
     }
 
     private var gridSkeleton: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 12) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 10) {
             ForEach(0..<6, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 10).fill(AppColors.card).frame(height: 200)
             }
@@ -275,63 +275,66 @@ struct SearchView: View {
     }
 }
 
-// MARK: - Torrent Card
+// MARK: - Torrent Card (Flutter 版卡片网格设计)
 private struct TorrentCard: View {
     let torrent: ScrapedTorrent
     let isBookmarked: Bool
+    @State private var anim = false
 
     var body: some View {
-        TweenAnimationBuilder { value in
-            ZStack(alignment: .bottomLeading) {
-                AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img.resizable().aspectRatio(contentMode: .fill)
-                    case .failure, .empty:
-                        Rectangle().fill(AppColors.card).overlay {
-                            Image(systemName: "photo").foregroundColor(AppColors.placeholder)
+        RoundedRectangle(cornerRadius: 10)
+            .fill(AppColors.card)
+            .aspectRatio(0.72, contentMode: .fit)
+            .overlay(
+                ZStack {
+                    AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().aspectRatio(contentMode: .fill)
+                        case .failure, .empty:
+                            Color.clear.overlay(Image(systemName: "photo").foregroundColor(AppColors.placeholder))
+                        @unknown default: Color.clear
                         }
-                    @unknown default: Rectangle().fill(AppColors.card)
+                    }
+
+                    LinearGradient(colors: [.clear, .black.opacity(0.85)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 100)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(torrent.code)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white).lineLimit(1)
+                        Text(torrent.size)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+
+                    if isBookmarked {
+                        Circle().fill(AppColors.danger).frame(width: 22, height: 22)
+                            .overlay(Image(systemName: "heart.fill").font(.system(size: 10)).foregroundColor(.white))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(6)
+                    }
+
+                    if !torrent.date.isEmpty {
+                        Text(torrent.date)
+                            .font(.system(size: 9)).foregroundColor(.white.opacity(0.8))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 4))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                            .padding(6)
                     }
                 }
-                .frame(height: 160).clipped()
-
-                LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .top, endPoint: .bottom)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(torrent.code).font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white).lineLimit(1)
-                    Text(torrent.size).font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.7))
-                }
-                .padding(8)
-
-                if isBookmarked {
-                    Image(systemName: "heart.fill").font(.system(size: 10))
-                        .foregroundColor(AppColors.danger)
-                        .padding(6).background(Circle().fill(.ultraThinMaterial))
-                        .padding(6).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                }
-
-                if !torrent.date.isEmpty {
-                    Text(torrent.date).font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.8))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
-                        .padding(6).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .opacity(value).offset(y: 15 * (1 - value))
-        }
-    }
-}
-
-private struct TweenAnimationBuilder<Content: View>: View {
-    @State private var anim = false
-    let content: (Double) -> Content
-    var body: some View {
-        content(anim ? 1 : 0)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .opacity(anim ? 1 : 0)
+                .offset(y: anim ? 0 : 15)
+            )
             .onAppear { withAnimation(.easeOut(duration: 0.3)) { anim = true } }
     }
 }
@@ -474,21 +477,21 @@ private struct EasterEggView: View {
             ZStack {
                 AppColors.mainBg.ignoresSafeArea()
                 if isLoading {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         SkeletonBar(height: 80)
                         SkeletonBar(height: 80)
                         SkeletonBar(height: 80)
                     }
                     .padding(.horizontal, 20).padding(.top, 20)
                 } else if results.isEmpty {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         Image(systemName: "antenna.radiowaves.left.and.right")
                             .font(.system(size: 48)).foregroundColor(AppColors.placeholder)
                         Text("没有抓到数据").foregroundColor(AppColors.secondaryLabel)
                     }
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 12) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 10) {
                             ForEach(results) { torrent in
                                 TorrentCard(torrent: torrent, isBookmarked: false)
                             }
