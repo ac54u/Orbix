@@ -138,8 +138,8 @@ struct AddTorrentView: View {
 
             if let url = selectedFileURL {
                 HStack(spacing: 16) {
-                    Image(systemName: "doc.zipper")
-                        .font(.system(size: 24))
+                    Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                        .font(.system(size: 32))
                         .foregroundColor(AppColors.accent)
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -294,7 +294,8 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     let onDismiss: () -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.data], asCopy: true)
+        let torrentType = UTType(filenameExtension: "torrent") ?? .data
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [torrentType], asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
