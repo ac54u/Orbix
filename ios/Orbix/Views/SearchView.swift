@@ -13,7 +13,6 @@ struct SearchView: View {
     @State private var mediaViewerIndex = 0
     @State private var currentPage = 1
     @State private var hasMorePages = true
-    @State private var hasScrolled = false
 
     enum SearchState { case idle, loading, results, empty, error(String) }
 
@@ -57,6 +56,18 @@ struct SearchView: View {
                 }
             }
             .navigationTitle("搜索")
+            .searchable(text: $query, placement: .automatic, prompt: "搜索 torrent...")
+            .onChange(of: query) { _ in debounceSearch() }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        loadBookmarks()
+                    } label: {
+                        Image(systemName: bookmarks.isEmpty ? "heart" : "heart.fill")
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
             .onAppear { loadBookmarks(); if allResults.isEmpty { loadLatest() } }
             .sheet(item: $selectedTorrent) { TorrentDetailSheet(torrent: $0, bookmarks: $bookmarks, onChanged: saveBookmarks) }
             .fullScreenCover(isPresented: $showMediaViewer) {
@@ -65,52 +76,7 @@ struct SearchView: View {
                     MediaViewer(images: imgs, initialIndex: mediaViewerIndex)
                 }
             }
-            .safeAreaInset(edge: .top, spacing: 0) { searchBar }
         }
-    }
-
-    // MARK: - Search Bar
-    private var searchBar: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(AppColors.placeholder)
-                    TextField("搜索 torrent...", text: $query)
-                        .bodyFont()
-                        .autocapitalization(.none)
-                        .onChange(of: query) { _ in debounceSearch() }
-                    if !query.isEmpty {
-                        Button { query = ""; results = []; allResults = []; state = .idle } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundColor(AppColors.tertiaryLabel)
-                        }
-                    }
-                }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 10).fill(AppColors.card))
-
-                Button {
-                    loadBookmarks()
-                } label: {
-                    Image(systemName: bookmarks.isEmpty ? "heart" : "heart.fill")
-                        .foregroundColor(AppColors.accent).font(.title3)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-
-            if case .results = state, !results.isEmpty {
-                HStack {
-                    Image(systemName: "doc.text").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
-                    Text(query.isEmpty ? "\(results.count) 条结果" : "「\(query)」· \(results.count) 条")
-                        .font(.caption2).foregroundColor(AppColors.tertiaryLabel)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 6)
-            }
-        }
-        .background(AppColors.groupedBg)
     }
 
     // MARK: - Idle / Trending
@@ -200,7 +166,7 @@ struct SearchView: View {
                         } else if hasMorePages {
                             Color.clear
                                 .frame(height: 1)
-                                .onAppear { if hasScrolled { loadMore() } }
+                                .onAppear { loadMore() }
                         } else {
                             Text("— 已加载全部 —")
                                 .font(.caption)
@@ -212,10 +178,6 @@ struct SearchView: View {
             }
         }
         .refreshable { await refreshSearch() }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 5)
-                .onChanged { _ in if !hasScrolled { hasScrolled = true } }
-        )
         .gesture(pinchToZoom)
     }
 
@@ -235,10 +197,10 @@ struct SearchView: View {
     private func loadLatest() {
         Task {
             state = .loading
-            currentPage = 3
+            currentPage = 5
             hasMorePages = true
             do {
-                let items = try await TorrentSearchService.shared.newTorrents(pages: 3, startPage: 1)
+                let items = try await TorrentSearchService.shared.newTorrents(pages: 5, startPage: 1)
                 await MainActor.run {
                     allResults = items
                     results = items
@@ -252,6 +214,12 @@ struct SearchView: View {
 
     private func debounceSearch() {
         searchTask?.cancel()
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            results = []
+            allResults = []
+            state = .idle
+            return
+        }
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 400_000_000)
             if !Task.isCancelled { await runSearch() }
@@ -264,11 +232,11 @@ struct SearchView: View {
 
         await MainActor.run { state = .loading; hasMorePages = true }
         do {
-            let items = try await TorrentSearchService.shared.search(query: q, pages: 3, startPage: 1)
+            let items = try await TorrentSearchService.shared.search(query: q, pages: 5, startPage: 1)
             await MainActor.run {
                 allResults = items
                 results = items
-                currentPage = 3
+                currentPage = 5
                 state = items.isEmpty ? .empty : .results
             }
         } catch {
@@ -282,11 +250,11 @@ struct SearchView: View {
             let items: [ScrapedTorrent]
             let page: Int
             if q.isEmpty {
-                items = try await TorrentSearchService.shared.newTorrents(pages: 3, startPage: 1)
-                page = 3
+                items = try await TorrentSearchService.shared.newTorrents(pages: 5, startPage: 1)
+                page = 5
             } else {
-                items = try await TorrentSearchService.shared.search(query: q, pages: 3, startPage: 1)
-                page = 3
+                items = try await TorrentSearchService.shared.search(query: q, pages: 5, startPage: 1)
+                page = 5
             }
             await MainActor.run {
                 allResults = items
