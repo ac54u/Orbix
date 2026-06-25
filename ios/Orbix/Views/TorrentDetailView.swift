@@ -179,21 +179,21 @@ struct TorrentDetailView: View {
         VStack(spacing: 0) {
             SectionHeader(title: "传输")
             VStack(spacing: 0) {
-                DetailRow(label: "下载速度", value: formatSpeed(torrent.dlspeed), valueColor: AppColors.accent)
-                Divider().padding(.leading, 16)
-                DetailRow(label: "上传速度", value: formatSpeed(torrent.upspeed), valueColor: AppColors.success)
-                Divider().padding(.leading, 16)
-                DetailRow(label: "已下载", value: formatBytes(torrent.downloaded))
-                Divider().padding(.leading, 16)
-                DetailRow(label: "已上传", value: formatBytes(torrent.uploaded))
-                Divider().padding(.leading, 16)
-                DetailRow(label: "分享率", value: String(format: "%.2f", torrent.ratio))
+                DetailRow(icon: "arrow.down.circle.fill", iconColor: AppColors.accent, label: "下载速度", value: formatSpeed(torrent.dlspeed), valueColor: AppColors.accent)
+                Divider().padding(.leading, 44)
+                DetailRow(icon: "arrow.up.circle.fill", iconColor: AppColors.success, label: "上传速度", value: formatSpeed(torrent.upspeed), valueColor: AppColors.success)
+                Divider().padding(.leading, 44)
+                DetailRow(icon: "tray.and.arrow.down.fill", iconColor: AppColors.secondaryLabel, label: "已下载", value: formatBytes(torrent.downloaded))
+                Divider().padding(.leading, 44)
+                DetailRow(icon: "tray.and.arrow.up.fill", iconColor: AppColors.secondaryLabel, label: "已上传", value: formatBytes(torrent.uploaded))
+                Divider().padding(.leading, 44)
+                DetailRow(icon: "chart.pie.fill", iconColor: AppColors.secondaryLabel, label: "分享率", value: String(format: "%.2f", torrent.ratio), valueColor: torrent.ratio >= 1.0 ? AppColors.success : AppColors.secondaryLabel)
                 if torrent.eta > 0 {
-                    Divider().padding(.leading, 16)
-                    DetailRow(label: "预计完成", value: torrent.etaFormatted)
+                    Divider().padding(.leading, 44)
+                    DetailRow(icon: "timer", iconColor: AppColors.secondaryLabel, label: "预计完成", value: torrent.etaFormatted)
                 }
-                Divider().padding(.leading, 16)
-                DetailRow(label: "种子/吸血", value: "\(torrent.numSeeds) / \(torrent.numLeechs)")
+                Divider().padding(.leading, 44)
+                DetailRow(icon: "person.2.fill", iconColor: AppColors.secondaryLabel, label: "种子/吸血", value: "\(torrent.numSeeds) / \(torrent.numLeechs)")
             }
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -206,43 +206,59 @@ struct TorrentDetailView: View {
         VStack(spacing: 0) {
             SectionHeader(title: "信息")
             VStack(spacing: 0) {
-                DetailRow(label: "总大小", value: formatBytes(props.totalSize))
-                Divider().padding(.leading, 16)
+                DetailRow(icon: "internaldrive.fill", iconColor: AppColors.secondaryLabel, label: "总大小", value: formatBytes(props.totalSize))
+                Divider().padding(.leading, 44)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("保存路径")
-                        .font(.system(size: 15))
-                        .foregroundColor(AppColors.label)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(AppColors.secondaryLabel)
+                            .frame(width: 24)
+                        Text("保存路径")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.label)
+                        Spacer()
+                        CopyButton(textToCopy: props.savePath)
+                    }
                     Text(props.savePath)
                         .font(.system(size: 13, design: .monospaced))
                         .foregroundColor(AppColors.secondaryLabel)
                         .lineLimit(2)
+                        .padding(.leading, 36)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !props.category.isEmpty {
-                    Divider().padding(.leading, 16)
-                    DetailRow(label: "分类", value: props.category)
+                    Divider().padding(.leading, 44)
+                    DetailRow(icon: "square.grid.2x2.fill", iconColor: AppColors.secondaryLabel, label: "分类", value: props.category)
                 }
                 if !props.tags.isEmpty {
-                    Divider().padding(.leading, 16)
-                    DetailRow(label: "标签", value: props.tags)
+                    Divider().padding(.leading, 44)
+                    DetailRow(icon: "tag.fill", iconColor: AppColors.secondaryLabel, label: "标签", value: props.tags)
                 }
 
-                Divider().padding(.leading, 16)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Hash")
-                        .font(.system(size: 15))
-                        .foregroundColor(AppColors.label)
+                Divider().padding(.leading, 44)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "number.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(AppColors.secondaryLabel)
+                            .frame(width: 24)
+                        Text("Hash")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.label)
+                        Spacer()
+                        CopyButton(textToCopy: props.hash)
+                    }
                     Text(props.hash)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(AppColors.tertiaryLabel)
+                        .padding(.leading, 36)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -427,12 +443,19 @@ private struct SectionHeader: View {
 }
 
 private struct DetailRow: View {
+    let icon: String
+    let iconColor: Color
     let label: String
     let value: String
     var valueColor: Color = AppColors.secondaryLabel
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+
             Text(label)
                 .font(.system(size: 15))
                 .foregroundColor(AppColors.label)
@@ -444,6 +467,30 @@ private struct DetailRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+private struct CopyButton: View {
+    let textToCopy: String
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = textToCopy
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+
+            withAnimation { copied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation { copied = false }
+            }
+        } label: {
+            Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
+                .font(.system(size: 14))
+                .foregroundColor(copied ? AppColors.success : AppColors.accent)
+                .padding(4)
+        }
+        .buttonStyle(.plain)
     }
 }
 
