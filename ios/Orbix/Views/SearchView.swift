@@ -259,11 +259,13 @@ struct SearchView: View {
                 page = 5
             }
             await MainActor.run {
-                allResults = items
-                results = items
-                currentPage = page
-                hasMorePages = true
-                state = items.isEmpty ? .empty : .results
+                withAnimation(.none) {
+                    allResults = items
+                    results = items
+                    currentPage = page
+                    hasMorePages = true
+                    state = items.isEmpty ? .empty : .results
+                }
             }
         } catch {}
     }
