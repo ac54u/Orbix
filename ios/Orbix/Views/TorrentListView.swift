@@ -191,6 +191,7 @@ private struct SwipeableTorrentCard: View {
     @State private var offset: CGFloat = 0
     @State private var isDeleting = false
     @State private var navigateToDetail = false
+    @State private var isDragging = false
     
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -229,6 +230,7 @@ private struct SwipeableTorrentCard: View {
             
             // 改用 Button，完全掌控点击与滑动
             Button {
+                guard !isDragging else { return }
                 if offset < 0 {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         offset = 0
@@ -252,6 +254,7 @@ private struct SwipeableTorrentCard: View {
             DragGesture(minimumDistance: 10)
                 .onChanged { value in
                     guard !isDeleting else { return }
+                    isDragging = true
                     if value.translation.width < 0 && abs(value.translation.width) > abs(value.translation.height) {
                         offset = value.translation.width * 0.8
                     }
@@ -260,6 +263,7 @@ private struct SwipeableTorrentCard: View {
                     guard !isDeleting else { return }
                     guard abs(value.translation.width) > abs(value.translation.height) else {
                         offset = 0
+                        isDragging = false
                         return
                     }
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -268,6 +272,9 @@ private struct SwipeableTorrentCard: View {
                         } else {
                             offset = 0
                         }
+                    }
+                    DispatchQueue.main.async {
+                        isDragging = false
                     }
                 }
         )
