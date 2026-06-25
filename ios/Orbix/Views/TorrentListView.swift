@@ -206,7 +206,7 @@ private struct SwipeableTorrentCard: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(AppColors.danger)
                     .frame(width: 72)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 4)
                     .overlay(alignment: .trailing) {
                         Image(systemName: "trash.fill")
                             .font(.system(size: 20, weight: .bold))
