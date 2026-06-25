@@ -48,8 +48,8 @@ struct TorrentDetailView: View {
                             transferSection(torrent)
                             if let props = properties {
                                 infoSection(props)
-                                timeSection(props)
                             }
+                            timeSection(torrent, props: properties)
                         }
 
                         if !files.isEmpty {
@@ -338,14 +338,16 @@ struct TorrentDetailView: View {
     }
 
     // MARK: - Time Section
-    private func timeSection(_ props: TorrentProperties) -> some View {
-        VStack(spacing: 0) {
+    private func timeSection(_ torrent: TorrentInfo, props: TorrentProperties?) -> some View {
+        let added = props?.addedOn ?? torrent.addedOn
+        let completed = props?.completionOn ?? torrent.completionOn
+        return VStack(spacing: 0) {
             SectionHeader(title: "时间")
             VStack(spacing: 0) {
-                DetailRow(icon: "calendar.badge.plus", iconColor: AppColors.secondaryLabel, label: "添加时间", value: formatUnixTime(props.addedOn))
-                if props.completionOn > 0 {
+                DetailRow(icon: "calendar.badge.plus", iconColor: AppColors.secondaryLabel, label: "添加时间", value: formatUnixTime(added))
+                if completed > 0 {
                     Divider().padding(.leading, 44)
-                    DetailRow(icon: "checkmark.seal.fill", iconColor: AppColors.success, label: "完成时间", value: formatUnixTime(props.completionOn))
+                    DetailRow(icon: "checkmark.seal.fill", iconColor: AppColors.success, label: "完成时间", value: formatUnixTime(completed))
                 }
             }
             .background(
