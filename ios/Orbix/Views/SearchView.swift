@@ -297,63 +297,70 @@ private struct TorrentCard: View {
     let isBookmarked: Bool
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(AppColors.card)
-            .aspectRatio(0.72, contentMode: .fit)
-            .overlay(
-                ZStack(alignment: .bottomLeading) {
-                    AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().aspectRatio(contentMode: .fill)
-                        case .failure, .empty:
-                            Color.clear
-                        @unknown default: Color.clear
-                        }
-                    }
+        ZStack(alignment: .bottomLeading) {
+            // 1. 底色
+            AppColors.card
 
-                    LinearGradient(colors: [.clear, .black.opacity(0.6)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .frame(height: 100)
-                        .frame(maxHeight: .infinity, alignment: .bottom)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(torrent.code)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white).lineLimit(1)
-                        Text(torrent.size)
-                            .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.7))
-                        if let desc = torrent.description, !desc.isEmpty {
-                            Text(desc)
-                                .font(.system(size: 9))
-                                .foregroundColor(.white.opacity(0.6))
-                                .lineLimit(1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-
-                    if isBookmarked {
-                        Circle().fill(AppColors.danger).frame(width: 20, height: 20)
-                            .overlay(Image(systemName: "heart.fill").font(.system(size: 9)).foregroundColor(.white))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            .padding(6)
-                    }
-
-                    if !torrent.date.isEmpty {
-                        Text(torrent.date)
-                            .font(.system(size: 9)).foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                            .padding(6)
-                    }
+            // 2. 图片层
+            AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                case .failure, .empty:
+                    Color.clear
+                @unknown default:
+                    Color.clear
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            )
+            }
+
+            // 3. 底部渐变遮罩
+            LinearGradient(colors: [.clear, .black.opacity(0.6)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 100)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+
+            // 4. 文字信息
+            VStack(alignment: .leading, spacing: 2) {
+                Text(torrent.code)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white).lineLimit(1)
+                Text(torrent.size)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.7))
+                if let desc = torrent.description, !desc.isEmpty {
+                    Text(desc)
+                        .font(.system(size: 9))
+                        .foregroundColor(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+
+            // 5. 收藏图标
+            if isBookmarked {
+                Circle().fill(AppColors.danger).frame(width: 20, height: 20)
+                    .overlay(Image(systemName: "heart.fill").font(.system(size: 9)).foregroundColor(.white))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(6)
+            }
+
+            // 6. 日期标签
+            if !torrent.date.isEmpty {
+                Text(torrent.date)
+                    .font(.system(size: 9)).foregroundColor(.white.opacity(0.8))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(6)
+            }
+        }
+        // 在最外层统一限制比例并裁剪，内部任何 fill 的元素都绝对不会溢出
+        .aspectRatio(0.72, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 
