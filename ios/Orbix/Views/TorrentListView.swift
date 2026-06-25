@@ -42,46 +42,18 @@ struct TorrentListView: View {
                             .foregroundColor(AppColors.secondaryLabel)
                     }
                 } else {
-                    List {
-                        Color.clear.frame(height: 10)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets())
-
-                        ForEach(filteredTorrents) { torrent in
-                            ZStack {
-                                NavigationLink(destination: TorrentDetailView(hash: torrent.hash)) {
-                                    EmptyView()
-                                }
-                                .opacity(0)
-                                
-                                TorrentRow(torrent: torrent)
-                                    .padding(.vertical, 14)
-                                    .padding(.horizontal, 16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(AppColors.card)
-                                    )
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredTorrents) { torrent in
+                                SwipeableTorrentCard(torrent: torrent) {
                                     executeDelete(torrent)
-                                } label: {
-                                    Label("删除", systemImage: "trash")
                                 }
                             }
                         }
-                        
+                        .padding(.vertical, 16)
+                        .padding(.horizontal, 20)
                         Color.clear.frame(height: 80)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets())
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
                     .refreshable {
                         await manualRefresh()
                     }
@@ -196,13 +168,11 @@ struct TorrentListView: View {
         Task {
             do {
                 try await QBitApi.shared.deleteTorrent(torrent.hash, deleteFiles: true)
-                
                 await MainActor.run {
-                    withAnimation {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         self.torrents.removeAll { $0.hash == torrent.hash }
                     }
                 }
-                
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.success)
             } catch {
@@ -213,7 +183,70 @@ struct TorrentListView: View {
     }
 }
 
-// MARK: - 组件部分保持不变
+// MARK: - 自定义高级滑动卡片
+private struct SwipeableTorrentCard: View {
+    let torrent: TorrentInfo
+    let onDelete: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    @State private var isDeleting = false
+    
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.danger)
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.trailing, 24)
+                        .scaleEffect(offset < -80 ? 1.2 : 0.9)
+                        .opacity(offset < -30 ? 1 : 0)
+                        .animation(.easeOut(duration: 0.2), value: offset)
+                }
+            
+            NavigationLink(destination: TorrentDetailView(hash: torrent.hash)) {
+                TorrentRow(torrent: torrent)
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppColors.card)
+                    )
+            }
+            .buttonStyle(.plain)
+            .offset(x: offset)
+            .gesture(
+                DragGesture(minimumDistance: 20)
+                    .onChanged { value in
+                        guard !isDeleting else { return }
+                        if value.translation.width < 0 {
+                            offset = value.translation.width * 0.8
+                        }
+                    }
+                    .onEnded { value in
+                        guard !isDeleting else { return }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if value.translation.width < -100 {
+                                offset = -UIScreen.main.bounds.width
+                                isDeleting = true
+                                let impact = UIImpactFeedbackGenerator(style: .heavy)
+                                impact.impactOccurred()
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    onDelete()
+                                }
+                            } else {
+                                offset = 0
+                            }
+                        }
+                    }
+            )
+        }
+    }
+}
+
+// MARK: - 其余 UI 组件
 private struct GlobalSpeedPill: View {
     let dl: Int64
     let up: Int64
@@ -309,15 +342,15 @@ private struct TorrentRow: View {
                 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        Capsule()
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
                             .fill(AppColors.separator.opacity(0.5))
                         
-                        Capsule()
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
                             .fill(progressColor)
                             .frame(width: max(0, geometry.size.width * CGFloat(torrent.progress)))
                     }
                 }
-                .frame(height: 3)
+                .frame(height: 2.5)
                 .padding(.top, 2)
             }
         }
