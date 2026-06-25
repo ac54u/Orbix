@@ -281,45 +281,57 @@ private struct TorrentCard: View {
     let isBookmarked: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img.resizable().aspectRatio(contentMode: .fill)
-                    case .failure, .empty:
-                        Rectangle().fill(AppColors.card).overlay {
-                            Image(systemName: "photo").foregroundColor(AppColors.placeholder)
+        RoundedRectangle(cornerRadius: 10)
+            .fill(AppColors.card)
+            .aspectRatio(0.72, contentMode: .fit)
+            .overlay(
+                ZStack(alignment: .bottomLeading) {
+                    AsyncImage(url: URL(string: torrent.thumbnail ?? "")) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().aspectRatio(contentMode: .fill)
+                        case .failure, .empty:
+                            Color.clear
+                        @unknown default: Color.clear
                         }
-                    @unknown default: Rectangle().fill(AppColors.card)
                     }
-                }
-                .frame(height: 120).clipped()
 
-                LinearGradient(colors: [.clear, .black.opacity(0.6)],
-                               startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [.clear, .black.opacity(0.6)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 80)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
 
-                HStack {
-                    Text(torrent.size).caption(.white)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
-                    Spacer()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(torrent.code)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white).lineLimit(1)
+                        Text(torrent.size)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+
                     if isBookmarked {
-                        Image(systemName: "heart.fill").font(.caption2).foregroundColor(AppColors.accent)
+                        Circle().fill(AppColors.danger).frame(width: 20, height: 20)
+                            .overlay(Image(systemName: "heart.fill").font(.system(size: 9)).foregroundColor(.white))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(6)
+                    }
+
+                    if !torrent.date.isEmpty {
+                        Text(torrent.date)
+                            .font(.system(size: 9)).foregroundColor(.white.opacity(0.8))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                            .padding(6)
                     }
                 }
-                .padding(6)
-
-                if !torrent.date.isEmpty {
-                    Text(torrent.date).caption(.white.opacity(0.8))
-                        .padding(6).frame(maxWidth: .infinity, alignment: .trailing).offset(y: -24)
-                }
-            }
-
-            Text(torrent.code).subtitle().lineLimit(2).padding(8)
-        }
-        .background(RoundedRectangle(cornerRadius: 10).fill(AppColors.card))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            )
     }
 }
 
