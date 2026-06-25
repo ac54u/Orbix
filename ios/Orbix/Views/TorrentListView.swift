@@ -39,26 +39,24 @@ struct TorrentListView: View {
                             .foregroundColor(AppColors.secondaryLabel)
                     }
                 } else {
-                    List {
-                        ForEach(filteredTorrents) { torrent in
-                            Section {
-                                ZStack {
-                                    NavigationLink(destination: TorrentDetailView(hash: torrent.hash)) {
-                                        EmptyView()
-                                    }
-                                    .opacity(0)
-                                    
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredTorrents) { torrent in
+                                NavigationLink(destination: TorrentDetailView(hash: torrent.hash)) {
                                     TorrentRow(torrent: torrent)
+                                        .padding(.vertical, 14)
+                                        .padding(.horizontal, 16)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .fill(AppColors.card)
+                                        )
                                 }
-                                .listRowBackground(AppColors.card)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+                                .buttonStyle(.plain)
                             }
                         }
+                        .padding(.vertical, 16)
+                        .padding(.horizontal, 20)
                     }
-                    .listStyle(.insetGrouped)
-                    .scrollContentBackground(.hidden)
-                    .environment(\.defaultMinListRowHeight, 10)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -256,15 +254,15 @@ private struct TorrentRow: View {
                 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        Capsule()
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
                             .fill(AppColors.separator.opacity(0.5))
                         
-                        Capsule()
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
                             .fill(progressColor)
                             .frame(width: max(0, geometry.size.width * CGFloat(torrent.progress)))
                     }
                 }
-                .frame(height: 4)
+                .frame(height: 2.5)
                 .padding(.top, 2)
             }
         }
