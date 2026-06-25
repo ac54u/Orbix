@@ -18,6 +18,7 @@ struct TorrentListView: View {
     }
 
     private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    @Namespace private var animationNamespace
 
     var body: some View {
         NavigationStack {
@@ -25,11 +26,13 @@ struct TorrentListView: View {
                 AppColors.mainBg.ignoresSafeArea()
 
                 if isLoading {
-                    VStack {
-                        SkeletonBar(height: 16)
-                        SkeletonBar(height: 16)
+                    VStack(spacing: 12) {
+                        SkeletonBar(height: 80)
+                        SkeletonBar(height: 80)
+                        SkeletonBar(height: 80)
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 } else if filteredTorrents.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "square.stack")
@@ -51,11 +54,15 @@ struct TorrentListView: View {
                                                 .fill(AppColors.card)
                                         )
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(CardButtonStyle())
                             }
                         }
                         .padding(.vertical, 16)
                         .padding(.horizontal, 20)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: filteredTorrents.map(\.id))
+                    }
+                    .refreshable {
+                        await manualRefresh()
                     }
                 }
             }
@@ -90,40 +97,41 @@ struct TorrentListView: View {
         }
     }
 
-    @Namespace private var animationNamespace
-
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 18) {
+            HStack(spacing: 10) {
                 ForEach(TorrentFilter.allCases, id: \.self) { f in
                     Button {
-                        withAnimation(AppMotion.fastAnim()) {
+                        let impact = UISelectionFeedbackGenerator()
+                        impact.selectionChanged()
+
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                             filter = f
                         }
                     } label: {
-                        VStack(spacing: 6) {
-                            Text(f.rawValue)
-                                .font(.system(size: 15, weight: filter == f ? .semibold : .medium))
-                                .foregroundColor(filter == f ? AppColors.label : AppColors.secondaryLabel)
-                                .padding(.vertical, 8)
-
-                            if filter == f {
-                                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                                    .fill(AppColors.accent)
-                                    .frame(width: 24, height: 3)
-                                    .matchedGeometryEffect(id: "underline", in: animationNamespace)
-                            } else {
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(Color.clear)
-                                    .frame(width: 0, height: 3)
-                            }
-                        }
+                        Text(f.rawValue)
+                            .font(.system(size: 14, weight: filter == f ? .bold : .medium))
+                            .foregroundColor(filter == f ? .white : AppColors.secondaryLabel)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(
+                                ZStack {
+                                    if filter == f {
+                                        Capsule()
+                                            .fill(AppColors.accent)
+                                            .matchedGeometryEffect(id: "pillBg", in: animationNamespace)
+                                    } else {
+                                        Capsule()
+                                            .fill(AppColors.card.opacity(0.6))
+                                    }
+                                }
+                            )
                     }
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.vertical, 10)
         }
-        .frame(height: 44)
         .background(.ultraThinMaterial)
     }
 
@@ -140,22 +148,36 @@ struct TorrentListView: View {
 
     private func refresh() {
         Task {
-            do {
-                let list = try await QBitApi.shared.getTorrents()
-                let transfer = try? await QBitApi.shared.getTransferInfo()
+            let list = (try? await QBitApi.shared.getTorrents()) ?? torrents
+            let transfer = try? await QBitApi.shared.getTransferInfo()
 
-                await MainActor.run {
-                    self.torrents = list
-                    self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
-                    self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                }
+            await MainActor.run {
+                self.torrents = list
+                self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
+                self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
+                self.isLoading = false
             }
         }
+    }
+
+    @Sendable private func manualRefresh() async {
+        let list = (try? await QBitApi.shared.getTorrents()) ?? torrents
+        let transfer = try? await QBitApi.shared.getTransferInfo()
+        await MainActor.run {
+            self.torrents = list
+            self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
+            self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
+        }
+    }
+}
+
+// MARK: - Card Button Style
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }
 }
 
@@ -254,15 +276,15 @@ private struct TorrentRow: View {
                 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 1, style: .continuous)
+                        Capsule()
                             .fill(AppColors.separator.opacity(0.5))
                         
-                        RoundedRectangle(cornerRadius: 1, style: .continuous)
+                        Capsule()
                             .fill(progressColor)
                             .frame(width: max(0, geometry.size.width * CGFloat(torrent.progress)))
                     }
                 }
-                .frame(height: 2.5)
+                .frame(height: 3)
                 .padding(.top, 2)
             }
         }
