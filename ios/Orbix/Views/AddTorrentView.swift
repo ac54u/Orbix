@@ -285,8 +285,8 @@ struct AddTorrentView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            guard url.startAccessingSecurityScopedResource() else { return }
-            defer { url.stopAccessingSecurityScopedResource() }
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
             if let data = try? Data(contentsOf: url) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
