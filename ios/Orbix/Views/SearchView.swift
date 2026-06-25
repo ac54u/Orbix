@@ -59,12 +59,13 @@ struct SearchView: View {
             .navigationTitle("搜索")
             .searchable(text: $query, placement: .automatic, prompt: "搜索 torrent...")
             .onChange(of: query) { _ in debounceSearch() }
-        .toolbar(id: "bookmark_\(bookmarks.count)") {
+        .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { loadBookmarks() } label: {
                     Image(systemName: bookmarks.isEmpty ? "heart" : "heart.fill")
                         .foregroundColor(AppColors.accent)
                 }
+                .id("bookmark_\(bookmarks.count)")
             }
         }
             .onAppear { loadBookmarks(); if allResults.isEmpty { loadLatest() } }
@@ -495,7 +496,7 @@ private struct TorrentDetailSheet: View {
 
                     VStack(spacing: 10) {
                         Button {
-                            Task { try? await QBitApi.shared.addMagnet([torrent.magnet]); dismiss() }
+                            Task { _ = try? await QBitApi.shared.addMagnet([torrent.magnet]); dismiss() }
                         } label: {
                             Label("添加到队列", systemImage: "square.and.arrow.down")
                                 .bodyFont(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
