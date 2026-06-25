@@ -213,6 +213,18 @@ private struct SwipeableTorrentCard: View {
                             .opacity(offset < -30 ? 1 : 0)
                             .animation(.easeOut(duration: 0.2), value: offset)
                     }
+                    .onTapGesture {
+                        guard !isDeleting else { return }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            offset = -UIScreen.main.bounds.width
+                            isDeleting = true
+                            let impact = UIImpactFeedbackGenerator(style: .heavy)
+                            impact.impactOccurred()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                onDelete()
+                            }
+                        }
+                    }
             }
             
             // 改用 Button，完全掌控点击与滑动
