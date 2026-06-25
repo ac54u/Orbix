@@ -13,7 +13,7 @@ struct SearchView: View {
     @State private var mediaViewerIndex = 0
     @State private var currentPage = 1
     @State private var hasMorePages = true
-    @State private var visibleItemID: String?
+    @State private var showingBookmarks = false
 
     enum SearchState { case idle, loading, results, empty, error(String) }
 
@@ -64,12 +64,13 @@ struct SearchView: View {
                 Button {
                     let impact = UIImpactFeedbackGenerator(style: .light)
                     impact.impactOccurred()
-                    loadBookmarks()
+                    withAnimation(.none) { showingBookmarks.toggle() }
                 } label: {
-                    Image(systemName: bookmarks.isEmpty ? "heart" : "heart.fill")
+                    Image(systemName: showingBookmarks ? "heart.fill" : (bookmarks.isEmpty ? "heart" : "heart.fill"))
                         .foregroundColor(AppColors.accent)
                 }
-                .id("bookmark_\(bookmarks.hashValue)")
+                .id("bookmark_\(bookmarks.hashValue)_\(showingBookmarks)")
+                .disabled(bookmarks.isEmpty)
             }
         }
             .onAppear { loadBookmarks(); if allResults.isEmpty { loadLatest() } }
@@ -128,27 +129,34 @@ struct SearchView: View {
     }
 
     // MARK: - Results
-    private var currentVisibleDate: String? {
-        if let id = visibleItemID,
-           let item = results.first(where: { $0.id == id }) {
-            return item.date
-        }
-        return results.first?.date
+    private var displayResults: [ScrapedTorrent] {
+        showingBookmarks ? results.filter { bookmarks.contains($0.code) } : results
     }
 
     private var resultsView: some View {
         ScrollView {
+            if showingBookmarks && displayResults.isEmpty {
+                VStack(spacing: 12) {
+                    Spacer().frame(height: 80)
+                    Image(systemName: "heart.slash")
+                        .font(.system(size: 40))
+                        .foregroundColor(AppColors.placeholder)
+                    Text("没有收藏的种子")
+                        .foregroundColor(AppColors.secondaryLabel)
+                }
+                .frame(maxWidth: .infinity)
+            }
+
             LazyVGrid(columns: gridColumns, spacing: 1) {
-                ForEach(results) { torrent in
+                ForEach(displayResults) { torrent in
                     TorrentCard(torrent: torrent)
                         .onTapGesture { selectedTorrent = torrent }
                         .contextMenu { cardContextMenu(torrent) }
                 }
             }
-            .scrollTargetLayout()
             .padding(.top, 1)
 
-            if !results.isEmpty {
+            if !results.isEmpty, !showingBookmarks {
                 VStack(spacing: 4) {
                     if isLoadingMore {
                         ProgressView().tint(AppColors.accent)
@@ -165,9 +173,8 @@ struct SearchView: View {
                 .padding(.vertical, 20)
             }
         }
-        .scrollPosition(id: $visibleItemID)
         .overlay(alignment: .topTrailing) {
-            if let date = currentVisibleDate {
+            if let date = results.first?.date {
                 Text(date)
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundColor(.white)
@@ -179,7 +186,6 @@ struct SearchView: View {
                     )
                     .padding(.trailing, 4)
                     .padding(.top, 2)
-                    .transition(.opacity)
             }
         }
         .refreshable { await refreshSearch() }
@@ -222,6 +228,7 @@ struct SearchView: View {
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
             results = []
             allResults = []
+            showingBookmarks = false
             loadLatest()
             return
         }
