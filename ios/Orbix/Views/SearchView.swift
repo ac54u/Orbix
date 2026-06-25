@@ -19,6 +19,8 @@ struct SearchView: View {
     }
 
     @State private var searchTask: Task<Void, Never>?
+    @State private var searchIconTapCount = 0
+    @State private var showEasterEgg = false
 
     var body: some View {
         NavigationStack {
@@ -61,6 +63,9 @@ struct SearchView: View {
             .sheet(item: $selectedTorrent) { torrent in
                 TorrentDetailSheet(torrent: torrent)
             }
+            .fullScreenCover(isPresented: $showEasterEgg) {
+                EasterEggView()
+            }
             .fullScreenCover(isPresented: $showMediaViewer) {
                 if let thumb = selectedTorrent?.thumbnail {
                     MediaViewer(images: [thumb], initialIndex: 0)
@@ -78,6 +83,16 @@ struct SearchView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(AppColors.placeholder)
+                        .onTapGesture {
+                            searchIconTapCount += 1
+                            if searchIconTapCount >= 3 {
+                                searchIconTapCount = 0
+                                showEasterEgg = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                searchIconTapCount = 0
+                            }
+                        }
                     TextField("搜索 torrent...", text: $query)
                         .bodyFont()
                         .autocapitalization(.none)
@@ -386,5 +401,107 @@ private struct TorrentDetailSheet: View {
             let translated = try? await TranslateService.shared.toChinese(desc)
             await MainActor.run { translatedDescription = translated }
         }
+    }
+}
+
+private struct EasterEggView: View {
+    @State private var animate = false
+    @State private var showText = false
+    @State private var particles: [Particle] = []
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            AnimatedBg(animate: animate)
+
+            ForEach(particles) { p in
+                Text(p.emoji)
+                    .font(.system(size: p.size))
+                    .position(p.position)
+                    .opacity(p.opacity)
+                    .animation(.easeOut(duration: 2).repeatForever(autoreverses: true), value: animate)
+            }
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                GlowingLogo(size: 100)
+                    .scaleEffect(animate ? 1.2 : 0.8)
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animate)
+
+                if showText {
+                    Text("你发现了隐藏彩蛋！")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .transition(.scale.combined(with: .opacity))
+
+                    Text("141ppv 秘密探索者")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .transition(.opacity)
+                }
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Text("返回搜索")
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                }
+                .padding(.bottom, 60)
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            animate = true
+            generateParticles()
+            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
+                showText = true
+            }
+        }
+    }
+
+    private func generateParticles() {
+        let emojis = ["✨", "🌟", "💫", "⭐", "🎯", "🔍", "🎉", "🎊"]
+        for _ in 0..<20 {
+            let p = Particle(
+                id: UUID(),
+                emoji: emojis.randomElement()!,
+                position: CGPoint(
+                    x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
+                    y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
+                ),
+                size: CGFloat.random(in: 16...36),
+                opacity: Double.random(in: 0.3...0.9)
+            )
+            particles.append(p)
+        }
+    }
+}
+
+private struct Particle: Identifiable {
+    let id: UUID
+    let emoji: String
+    let position: CGPoint
+    let size: CGFloat
+    let opacity: Double
+}
+
+private struct AnimatedBg: View {
+    let animate: Bool
+
+    var body: some View {
+        LinearGradient(
+            colors: [AppColors.accent, .purple, AppColors.accentDark, .pink],
+            startPoint: animate ? .topLeading : .bottomTrailing,
+            endPoint: animate ? .bottomTrailing : .topLeading
+        )
+        .animation(.easeInOut(duration: 4).repeatForever(autoreverses: true), value: animate)
     }
 }
