@@ -432,15 +432,15 @@ struct TorrentDetailView: View {
                             Text("\(peer.ip):\(peer.port)")
                                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                                 .foregroundColor(AppColors.label)
+                            if !peer.country.isEmpty {
+                                Text(peer.country)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(countryColor(peer.countryCode))
+                            }
                             Spacer()
                             Text("\(peer.progressPercent)%")
                                 .font(.system(size: 12, design: .monospaced))
                                 .foregroundColor(AppColors.secondaryLabel)
-                        }
-                        if !peer.country.isEmpty {
-                            Text(peer.country)
-                                .font(.system(size: 12))
-                                .foregroundColor(AppColors.tertiaryLabel)
                         }
                         if !peer.client.isEmpty {
                             Text(peer.client)
@@ -453,14 +453,26 @@ struct TorrentDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     if index < peers.count - 1 {
-                        Divider().padding(.leading, 16)
+                        Divider()
+                            .padding(.leading, 16)
+                            .opacity(0.4)
                     }
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(AppColors.card)
+                    .fill(.ultraThinMaterial)
             )
+        }
+    }
+
+    private func countryColor(_ code: String) -> Color {
+        switch code.uppercased() {
+        case "CN", "HK", "TW", "MO": return AppColors.danger
+        case "JP": return AppColors.accent
+        case "US", "GB", "CA", "AU": return AppColors.success
+        case "KR": return AppColors.warning
+        default: return AppColors.secondaryLabel
         }
     }
 
