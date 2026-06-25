@@ -70,7 +70,6 @@ struct SearchView: View {
                         .foregroundColor(AppColors.accent)
                 }
                 .id("bookmark_\(bookmarks.hashValue)_\(showingBookmarks)")
-                .disabled(bookmarks.isEmpty)
             }
         }
             .onAppear { loadBookmarks(); if allResults.isEmpty { loadLatest() } }
@@ -133,6 +132,16 @@ struct SearchView: View {
         showingBookmarks ? results.filter { bookmarks.contains($0.code) } : results
     }
 
+    private var sections: [(date: String, items: [ScrapedTorrent])] {
+        var dict = [String: [ScrapedTorrent]]()
+        var order: [String] = []
+        for item in displayResults {
+            if dict[item.date] == nil { order.append(item.date) }
+            dict[item.date, default: []].append(item)
+        }
+        return order.map { ($0, dict[$0]!) }
+    }
+
     private var resultsView: some View {
         ScrollView {
             if showingBookmarks && displayResults.isEmpty {
@@ -147,30 +156,50 @@ struct SearchView: View {
                 .frame(maxWidth: .infinity)
             }
 
-            LazyVGrid(columns: gridColumns, spacing: 1) {
-                ForEach(displayResults) { torrent in
-                    TorrentCard(torrent: torrent)
-                        .onTapGesture { selectedTorrent = torrent }
-                        .contextMenu { cardContextMenu(torrent) }
-                }
-            }
-            .padding(.top, 1)
-
-            if !results.isEmpty, !showingBookmarks {
-                VStack(spacing: 4) {
-                    if isLoadingMore {
-                        ProgressView().tint(AppColors.accent)
-                    } else if hasMorePages {
-                        Color.clear
-                            .frame(height: 1)
-                            .onAppear { loadMore() }
-                    } else {
-                        Text("— 已加载全部 —")
-                            .font(.caption)
-                            .foregroundColor(AppColors.tertiaryLabel)
+            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                ForEach(sections, id: \.date) { section in
+                    Section {
+                        LazyVGrid(columns: gridColumns, spacing: 1) {
+                            ForEach(section.items) { torrent in
+                                TorrentCard(torrent: torrent)
+                                    .onTapGesture { selectedTorrent = torrent }
+                                    .contextMenu { cardContextMenu(torrent) }
+                            }
+                        }
+                    } header: {
+                        HStack {
+                            Spacer()
+                            Text(section.date)
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(.black.opacity(0.65))
+                                )
+                                .padding(.trailing, 4)
+                                .padding(.top, 2)
+                        }
                     }
                 }
-                .padding(.vertical, 20)
+
+                if !results.isEmpty, !showingBookmarks {
+                    VStack(spacing: 4) {
+                        if isLoadingMore {
+                            ProgressView().tint(AppColors.accent)
+                        } else if hasMorePages {
+                            Color.clear
+                                .frame(height: 1)
+                                .onAppear { loadMore() }
+                        } else {
+                            Text("— 已加载全部 —")
+                                .font(.caption)
+                                .foregroundColor(AppColors.tertiaryLabel)
+                        }
+                    }
+                    .padding(.vertical, 20)
+                }
             }
         }
         .refreshable { await refreshSearch() }
