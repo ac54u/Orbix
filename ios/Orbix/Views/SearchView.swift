@@ -173,21 +173,6 @@ struct SearchView: View {
                 .padding(.vertical, 20)
             }
         }
-        .overlay(alignment: .topTrailing) {
-            if let date = results.first?.date {
-                Text(date)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(.black.opacity(0.65))
-                    )
-                    .padding(.trailing, 4)
-                    .padding(.top, 2)
-            }
-        }
         .refreshable { await refreshSearch() }
         .gesture(pinchToZoom)
     }

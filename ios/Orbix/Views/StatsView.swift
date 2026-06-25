@@ -23,21 +23,27 @@ struct StatsView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            Text("当前总速度").sectionHeader()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            heroSpeedCard
+                        Text("当前总速度").sectionHeader()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        heroSpeedCard
 
+                        if transfer?.serverState != nil {
                             Text("传输量").sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            transferVolumeCard
+                        }
+                        transferVolumeCard
 
+                        if transfer?.serverState != nil {
                             Text("连接").sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            connectionCard
+                        }
+                        connectionCard
 
+                        if transfer?.serverState != nil {
                             Text("磁盘").sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            diskCard
+                        }
+                        diskCard
 
                             Text("概览").sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -102,9 +108,10 @@ struct StatsView: View {
     }
 
     // MARK: - Transfer Volume Card
+    @ViewBuilder
     private var transferVolumeCard: some View {
-        VStack(spacing: 0) {
-            if let state = transfer?.serverState {
+        if let state = transfer?.serverState {
+            VStack(spacing: 0) {
                 statRow("会话下载", value: formatBytes(transfer?.dlInfoData ?? 0))
                 Divider().background(AppColors.separator)
                 statRow("会话上传", value: formatBytes(transfer?.upInfoData ?? 0))
@@ -117,45 +124,47 @@ struct StatsView: View {
                 Divider().background(AppColors.separator)
                 statRow("浪费", value: formatBytes(state.totalWastedSession))
             }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(AppColors.card)
+            )
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppColors.card)
-        )
     }
 
     // MARK: - Connection Card
+    @ViewBuilder
     private var connectionCard: some View {
-        VStack(spacing: 0) {
-            if let state = transfer?.serverState {
+        if let state = transfer?.serverState {
+            VStack(spacing: 0) {
                 connectionStatusRow(status: state.connectionStatus)
                 Divider().background(AppColors.separator)
                 statRow("DHT 节点", value: "\(state.dhtNodes)")
             }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(AppColors.card)
+            )
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppColors.card)
-        )
     }
 
     // MARK: - Disk Card
+    @ViewBuilder
     private var diskCard: some View {
-        VStack(spacing: 0) {
-            if let state = transfer?.serverState {
+        if let state = transfer?.serverState {
+            VStack(spacing: 0) {
                 statRow("可用空间", value: formatBytes(state.freeSpaceOnDisk))
             }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(AppColors.card)
+            )
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppColors.card)
-        )
     }
 
     // MARK: - Overview Card
