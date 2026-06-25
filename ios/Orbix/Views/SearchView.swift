@@ -180,21 +180,16 @@ struct SearchView: View {
                                     .contextMenu { cardContextMenu(torrent) }
                             }
                         }
-                        .padding(.top, 1)
                     } header: {
                         HStack {
-                            Spacer()
                             Text(section.date)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(Capsule().fill(.black.opacity(0.5)))
-                                .padding(.trailing, 4)
-                                .padding(.top, 4)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(AppColors.secondaryLabel)
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity)
-                        .background(.clear)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial)
                     }
                 }
 
@@ -390,20 +385,27 @@ private struct TorrentCard: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                 case .failure, .empty:
-                    AppColors.card
+                    ZStack {
+                        Color(uiColor: .secondarySystemBackground)
+                        Image(systemName: "photo")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray.opacity(0.3))
+                    }
                 @unknown default:
-                    AppColors.card
+                    Color(uiColor: .secondarySystemBackground)
                 }
             }
 
-            // Size badge — Swiftgram Pro style pill at bottom-right
-            Text(torrent.size)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Capsule().fill(.black.opacity(0.5)))
-                .padding([.bottom, .trailing], 3)
+            // Size badge
+            if !torrent.size.isEmpty {
+                Text(torrent.size)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.65)))
+                    .padding([.bottom, .trailing], 4)
+            }
         }
         .aspectRatio(1, contentMode: .fit)
         .clipped()
