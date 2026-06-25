@@ -295,41 +295,32 @@ struct TorrentDetailView: View {
             VStack(spacing: 0) {
                 ForEach(files.indices, id: \.self) { index in
                     let file = files[index]
-                    HStack(spacing: 12) {
-                        Image(systemName: iconForFile(filename: file.name))
-                            .font(.system(size: 20))
-                            .foregroundColor(AppColors.secondaryLabel)
-                            .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(file.name)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AppColors.label)
+                            .lineLimit(2)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(file.name)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(AppColors.label)
-                                .lineLimit(2)
+                        HStack {
+                            Text(formatBytes(file.size))
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(AppColors.secondaryLabel)
+                            Spacer()
+                            Text("\(file.progressPercent)%")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(file.progress >= 1.0 ? AppColors.success : AppColors.accent)
+                        }
 
-                            HStack {
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        Capsule().fill(AppColors.separator.opacity(0.5))
-                                        Capsule()
-                                            .fill(AppColors.accent)
-                                            .frame(width: max(0, geometry.size.width * CGFloat(file.progress)))
-                                    }
-                                }
-                                .frame(height: 3)
-                                .frame(maxWidth: 80)
-
-                                Text("\(file.progressPercent)%")
-                                    .font(.system(size: 12, design: .monospaced))
-                                    .foregroundColor(AppColors.secondaryLabel)
-
-                                Spacer()
-
-                                Text(formatBytes(file.size))
-                                    .font(.system(size: 12, design: .monospaced))
-                                    .foregroundColor(AppColors.secondaryLabel)
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                                    .fill(AppColors.separator.opacity(0.4))
+                                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                                    .fill(file.progress >= 1.0 ? AppColors.success : AppColors.accent)
+                                    .frame(width: max(0, geometry.size.width * CGFloat(file.progress)))
                             }
                         }
+                        .frame(height: 3)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
