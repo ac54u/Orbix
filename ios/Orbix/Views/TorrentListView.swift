@@ -235,33 +235,33 @@ private struct SwipeableTorrentCard: View {
             }
             .buttonStyle(SolidCardButtonStyle())
             .offset(x: offset)
-            .gesture(
-                DragGesture(minimumDistance: 15)
-                    .onChanged { value in
-                        guard !isDeleting else { return }
-                        if value.translation.width < 0 && abs(value.translation.width) > abs(value.translation.height) {
-                            offset = value.translation.width * 0.8
-                        }
-                    }
-                    .onEnded { value in
-                        guard !isDeleting else { return }
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            if value.translation.width < -80 || value.predictedEndTranslation.width < -150 {
-                                offset = -UIScreen.main.bounds.width
-                                isDeleting = true
-                                let impact = UIImpactFeedbackGenerator(style: .heavy)
-                                impact.impactOccurred()
-                                
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    onDelete()
-                                }
-                            } else {
-                                offset = 0
-                            }
-                        }
-                    }
-            )
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    guard !isDeleting else { return }
+                    if value.translation.width < 0 && abs(value.translation.width) > abs(value.translation.height) {
+                        offset = value.translation.width * 0.8
+                    }
+                }
+                .onEnded { value in
+                    guard !isDeleting else { return }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        if value.translation.width < -80 || value.predictedEndTranslation.width < -150 {
+                            offset = -UIScreen.main.bounds.width
+                            isDeleting = true
+                            let impact = UIImpactFeedbackGenerator(style: .heavy)
+                            impact.impactOccurred()
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                onDelete()
+                            }
+                        } else {
+                            offset = 0
+                        }
+                    }
+                }
+        )
     }
 }
 
