@@ -307,6 +307,11 @@ struct TorrentPeer: Codable, Identifiable {
     var progressPercent: Int { Int(progress * 100) }
 }
 
+struct TorrentPeersResponse: Codable {
+    let peers: [String: TorrentPeer]
+    let rid: Int?
+}
+
 struct SyncMainData: Codable {
     let torrents: [String: TorrentInfo]?
     let serverState: ServerState?
