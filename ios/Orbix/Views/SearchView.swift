@@ -125,26 +125,18 @@ struct SearchView: View {
     }
 
     // MARK: - Results
-    private var sortedResults: [ScrapedTorrent] {
-        results.sorted { a, b in
-            let da = parseDate(a.date) ?? .distantPast
-            let db = parseDate(b.date) ?? .distantPast
-            return da > db
-        }
-    }
-
     private var currentVisibleDate: String? {
         if let id = visibleItemID,
-           let item = sortedResults.first(where: { $0.id == id }) {
+           let item = results.first(where: { $0.id == id }) {
             return item.date
         }
-        return sortedResults.first?.date
+        return results.first?.date
     }
 
     private var resultsView: some View {
         ScrollView {
             LazyVGrid(columns: gridColumns, spacing: 1) {
-                ForEach(sortedResults) { torrent in
+                ForEach(results) { torrent in
                     TorrentCard(torrent: torrent)
                         .onTapGesture { selectedTorrent = torrent }
                         .contextMenu { cardContextMenu(torrent) }
@@ -189,27 +181,6 @@ struct SearchView: View {
         }
         .refreshable { await refreshSearch() }
         .gesture(pinchToZoom)
-    }
-
-    private func parseDate(_ str: String) -> Date? {
-        let trimmed = str.trimmingCharacters(in: .whitespaces)
-        let formats = [
-            "yyyy-MM-dd",
-            "yyyy/MM/dd",
-            "MMM. dd, yyyy",
-            "MMMM dd, yyyy",
-            "MMM dd, yyyy",
-            "MMM. d, yyyy",
-            "MMMM d, yyyy",
-            "d MMM yyyy",
-        ]
-        let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-        for format in formats {
-            fmt.dateFormat = format
-            if let d = fmt.date(from: trimmed) { return d }
-        }
-        return nil
     }
 
     // MARK: - Context Menu
