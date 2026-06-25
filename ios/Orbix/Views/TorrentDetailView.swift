@@ -48,6 +48,9 @@ struct TorrentDetailView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 20)
                 }
+                .refreshable {
+                    await manualRefresh()
+                }
             }
         }
         .navigationTitle("详情")
@@ -129,6 +132,17 @@ struct TorrentDetailView: View {
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppColors.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [progressColor(torrent).opacity(0.4), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
         )
     }
 
@@ -243,33 +257,40 @@ struct TorrentDetailView: View {
             VStack(spacing: 0) {
                 ForEach(files.indices, id: \.self) { index in
                     let file = files[index]
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(file.name)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(AppColors.label)
-                            .lineLimit(2)
+                    HStack(spacing: 12) {
+                        Image(systemName: iconForFile(filename: file.name))
+                            .font(.system(size: 20))
+                            .foregroundColor(AppColors.secondaryLabel)
+                            .frame(width: 24)
 
-                        HStack {
-                            GeometryReader { geometry in
-                                ZStack(alignment: .leading) {
-                                    Capsule().fill(AppColors.separator.opacity(0.5))
-                                    Capsule()
-                                        .fill(AppColors.accent)
-                                        .frame(width: max(0, geometry.size.width * CGFloat(file.progress)))
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(file.name)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(AppColors.label)
+                                .lineLimit(2)
+
+                            HStack {
+                                GeometryReader { geometry in
+                                    ZStack(alignment: .leading) {
+                                        Capsule().fill(AppColors.separator.opacity(0.5))
+                                        Capsule()
+                                            .fill(AppColors.accent)
+                                            .frame(width: max(0, geometry.size.width * CGFloat(file.progress)))
+                                    }
                                 }
+                                .frame(height: 3)
+                                .frame(maxWidth: 80)
+
+                                Text("\(file.progressPercent)%")
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundColor(AppColors.secondaryLabel)
+
+                                Spacer()
+
+                                Text(formatBytes(file.size))
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundColor(AppColors.secondaryLabel)
                             }
-                            .frame(height: 3)
-                            .frame(maxWidth: 80)
-
-                            Text("\(file.progressPercent)%")
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(AppColors.secondaryLabel)
-
-                            Spacer()
-
-                            Text(formatBytes(file.size))
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(AppColors.secondaryLabel)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -284,6 +305,21 @@ struct TorrentDetailView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(AppColors.card)
             )
+        }
+    }
+
+    private func iconForFile(filename: String) -> String {
+        let ext = (filename as NSString).pathExtension.lowercased()
+        switch ext {
+        case "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "ts": return "film.fill"
+        case "mp3", "flac", "wav", "aac", "m4a", "ogg": return "music.note"
+        case "jpg", "jpeg", "png", "gif", "webp", "heic": return "photo.fill"
+        case "zip", "rar", "7z", "tar", "gz": return "doc.zipper"
+        case "txt", "md", "csv", "json", "xml", "nfo": return "doc.text.fill"
+        case "pdf": return "doc.richtext.fill"
+        case "exe", "msi", "dmg", "pkg", "apk", "ipa": return "app.badge.fill"
+        case "iso": return "opticaldisc"
+        default: return "doc.fill"
         }
     }
 
@@ -331,6 +367,17 @@ struct TorrentDetailView: View {
             } catch {
                 await MainActor.run { isLoading = false }
             }
+        }
+    }
+
+    @Sendable private func manualRefresh() async {
+        let t = try? await QBitApi.shared.getTorrentByHash(hash)
+        let p = try? await QBitApi.shared.getProperties(hash)
+        let f = try? await QBitApi.shared.getTorrentFiles(hash)
+        await MainActor.run {
+            if let t = t { torrent = t }
+            if let p = p { properties = p }
+            if let f = f { files = f }
         }
     }
 
