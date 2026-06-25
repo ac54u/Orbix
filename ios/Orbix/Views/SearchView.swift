@@ -219,7 +219,7 @@ struct SearchView: View {
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
             results = []
             allResults = []
-            state = .idle
+            loadLatest()
             return
         }
         searchTask = Task {
