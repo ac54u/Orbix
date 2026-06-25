@@ -405,103 +405,71 @@ private struct TorrentDetailSheet: View {
 }
 
 private struct EasterEggView: View {
-    @State private var animate = false
-    @State private var showText = false
-    @State private var particles: [Particle] = []
     @Environment(\.dismiss) private var dismiss
+    @State private var results: [ScrapedTorrent] = []
+    @State private var isLoading = true
 
     var body: some View {
-        ZStack {
-            AnimatedBg(animate: animate)
+        NavigationStack {
+            ZStack {
+                AppColors.groupedBg.ignoresSafeArea()
 
-            ForEach(particles) { p in
-                Text(p.emoji)
-                    .font(.system(size: p.size))
-                    .position(p.position)
-                    .opacity(p.opacity)
-                    .animation(.easeOut(duration: 2).repeatForever(autoreverses: true), value: animate)
-            }
+                if isLoading {
+                    VStack(spacing: 16) {
+                        GlowingLogo(size: 60)
+                        ProgressView()
+                            .tint(AppColors.accent)
+                        Text("正在潜入 141ppv...")
+                            .subtitle()
+                    }
+                } else if results.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 48))
+                            .foregroundColor(AppColors.placeholder)
+                        Text("没有抓到数据")
+                            .subtitle()
+                    }
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 170))], spacing: 12) {
+                            ForEach(results) { torrent in
+                                TorrentCard(torrent: torrent, isBookmarked: false)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
 
-            VStack(spacing: 24) {
-                Spacer()
-
-                GlowingLogo(size: 100)
-                    .scaleEffect(animate ? 1.2 : 0.8)
-                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animate)
-
-                if showText {
-                    Text("你发现了隐藏彩蛋！")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .transition(.scale.combined(with: .opacity))
-
-                    Text("141ppv 秘密探索者")
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.8))
-                        .transition(.opacity)
+                        VStack(spacing: 4) {
+                            Text("TorrentSearchService 正在工作")
+                                .font(.caption)
+                                .foregroundColor(AppColors.secondaryLabel)
+                            Text("141ppv · 共 \(results.count) 条")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.tertiaryLabel)
+                        }
+                        .padding(.vertical, 20)
+                    }
                 }
-
-                Spacer()
-
-                Button {
-                    dismiss()
-                } label: {
-                    Text("返回搜索")
-                        .font(.body)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 12)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
+            }
+            .navigationTitle("🔍 秘密探索")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { dismiss() }
                 }
-                .padding(.bottom, 60)
             }
         }
-        .ignoresSafeArea()
-        .onAppear {
-            animate = true
-            generateParticles()
-            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
-                showText = true
+        .task {
+            do {
+                let scraped = try await TorrentSearchService.shared.trending(pages: 2)
+                await MainActor.run {
+                    results = scraped
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run { isLoading = false }
             }
         }
-    }
-
-    private func generateParticles() {
-        let emojis = ["✨", "🌟", "💫", "⭐", "🎯", "🔍", "🎉", "🎊"]
-        for _ in 0..<20 {
-            let p = Particle(
-                id: UUID(),
-                emoji: emojis.randomElement()!,
-                position: CGPoint(
-                    x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
-                    y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
-                ),
-                size: CGFloat.random(in: 16...36),
-                opacity: Double.random(in: 0.3...0.9)
-            )
-            particles.append(p)
-        }
-    }
-}
-
-private struct Particle: Identifiable {
-    let id: UUID
-    let emoji: String
-    let position: CGPoint
-    let size: CGFloat
-    let opacity: Double
-}
-
-private struct AnimatedBg: View {
-    let animate: Bool
-
-    var body: some View {
-        LinearGradient(
-            colors: [AppColors.accent, .purple, AppColors.accentDark, .pink],
-            startPoint: animate ? .topLeading : .bottomTrailing,
-            endPoint: animate ? .bottomTrailing : .topLeading
-        )
-        .animation(.easeInOut(duration: 4).repeatForever(autoreverses: true), value: animate)
     }
 }

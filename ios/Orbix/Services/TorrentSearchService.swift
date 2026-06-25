@@ -6,6 +6,24 @@ actor TorrentSearchService {
 
     private let session = URLSession.shared
 
+    func trending(pages: Int = 2, startPage: Int = 1) async throws -> [ScrapedTorrent] {
+        var allResults: [ScrapedTorrent] = []
+
+        try await withThrowingTaskGroup(of: [ScrapedTorrent].self) { group in
+            for page in startPage..<(startPage + pages) {
+                group.addTask {
+                    try await self.fetchPage(page, query: nil)
+                }
+            }
+
+            for try await results in group {
+                allResults.append(contentsOf: results)
+            }
+        }
+
+        return allResults
+    }
+
     func search(query: String, pages: Int = 3, startPage: Int = 1) async throws -> [ScrapedTorrent] {
         var allResults: [ScrapedTorrent] = []
 
@@ -32,9 +50,14 @@ actor TorrentSearchService {
         return allResults
     }
 
-    private func fetchPage(_ page: Int, query: String) async throws -> [ScrapedTorrent] {
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let urlStr = "https://www.141ppv.com/page/\(page)?s=\(encoded)"
+    private func fetchPage(_ page: Int, query: String?) async throws -> [ScrapedTorrent] {
+        let urlStr: String
+        if let query = query, !query.isEmpty {
+            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+            urlStr = "https://www.141ppv.com/page/\(page)?s=\(encoded)"
+        } else {
+            urlStr = "https://www.141ppv.com/page/\(page)/"
+        }
 
         guard let url = URL(string: urlStr) else { return [] }
 
