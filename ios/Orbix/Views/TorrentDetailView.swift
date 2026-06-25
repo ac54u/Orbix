@@ -438,6 +438,11 @@ struct TorrentDetailView: View {
                                     .foregroundColor(countryColor(peer.countryCode))
                             }
                             Spacer()
+                            if peer.upSpeed > 0 {
+                                Text("↑ \(formatSpeed(peer.upSpeed))")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(AppColors.success)
+                            }
                             Text("\(peer.progressPercent)%")
                                 .font(.system(size: 12, design: .monospaced))
                                 .foregroundColor(AppColors.secondaryLabel)
