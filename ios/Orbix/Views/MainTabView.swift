@@ -7,7 +7,8 @@ struct MainTabView: View {
     @State private var selectedTab = 2
     @State private var searchTapCount = 0
     @State private var lastSearchTap: Date = .distantPast
-    @State private var showEgg = false
+    @State private var show141 = false
+    @State private var showEggToast = false
 
     var body: some View {
         ZStack {
@@ -26,12 +27,18 @@ struct MainTabView: View {
                     }
                     .tag(1)
 
-                SearchView()
-                    .tabItem {
-                        Image(systemName: "magnifyingglass")
-                        Text("搜索")
+                Group {
+                    if show141 {
+                        SearchView()
+                    } else {
+                        QBitSearchView()
                     }
-                    .tag(2)
+                }
+                .tabItem {
+                    Image(systemName: show141 ? "magnifyingglass.circle.fill" : "magnifyingglass")
+                    Text("搜索")
+                }
+                .tag(2)
 
                 SettingsView(onLogout: onLogout)
                     .tabItem {
@@ -58,29 +65,30 @@ struct MainTabView: View {
 
                     if searchTapCount >= 3 {
                         searchTapCount = 0
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            showEgg = true
+                            show141.toggle()
+                            showEggToast = true
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            withAnimation { showEgg = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                            withAnimation { showEggToast = false }
                         }
                     }
                 }
             }
 
-            if showEgg {
+            if showEggToast {
                 VStack {
                     Spacer()
-                    Text("🎛️ 开发者模式已激活")
-                        .font(.system(size: 14, weight: .medium))
+                    Text(show141 ? "🐙 141ppv 搜刮模式" : "🔍 多源聚合搜索")
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(AppColors.accent)
-                                .shadow(color: AppColors.accent.opacity(0.4), radius: 10, y: 4)
+                                .fill(.ultraThinMaterial)
+                                .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
                         )
                         .padding(.bottom, 100)
                 }
