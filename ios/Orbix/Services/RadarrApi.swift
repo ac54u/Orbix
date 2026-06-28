@@ -52,7 +52,9 @@ enum RadarrApi {
         guard let cred = CredentialsManager.shared.radarr, !cred.apiKey.isEmpty else {
             throw ApiError.unauthorized
         }
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: allowed) ?? query
         guard let url = URL(string: "\(cred.apiURL)/movie/lookup?term=\(encoded)") else { return [] }
 
         var req = URLRequest(url: url)
