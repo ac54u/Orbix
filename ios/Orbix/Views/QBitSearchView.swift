@@ -452,7 +452,7 @@ struct QBitSearchView: View {
 
     private func runProwlarrSearch() async {
         do {
-            let items = try await ProwlarrApi.shared.search(query: query)
+            let items = try await ProwlarrApi.search(query: query)
             await MainActor.run {
                 self.results = items.sorted { $0.nbSeeders > $1.nbSeeders }
                 self.isLoading = false
@@ -464,7 +464,7 @@ struct QBitSearchView: View {
 
     private func runRadarrSearch() async {
         do {
-            let items = try await RadarrApi.shared.lookup(query: query)
+            let items = try await RadarrApi.lookup(query: query)
             await MainActor.run {
                 self.results = items
                 self.isLoading = false

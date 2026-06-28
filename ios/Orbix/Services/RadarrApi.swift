@@ -1,16 +1,16 @@
 import Foundation
 
 // MARK: - Radarr API
-actor RadarrApi {
+enum RadarrApi {
     static let shared = RadarrApi()
-    private let session = URLSession(configuration: .ephemeral)
-    private let decoder = JSONDecoder()
 
-    private var credential: ServiceCredential? {
+    private static let session = URLSession(configuration: .ephemeral)
+    private static let decoder = JSONDecoder()
+
+    private static var credential: ServiceCredential? {
         CredentialsManager.shared.radarr
     }
 
-    // MARK: - Movie Lookup (TMDB)
     struct RadarrMovie: Codable, Identifiable {
         let id: Int
         let title: String
@@ -35,10 +35,9 @@ actor RadarrApi {
         }
     }
 
-    /// Search TMDB and return unified search results
-    func lookup(query: String) async throws -> [SearchResult] {
+    static func lookup(query: String) async throws -> [SearchResult] {
         guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
-        var urlStr = "\(cred.apiURL)/movie/lookup?term=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
+        let urlStr = "\(cred.apiURL)/movie/lookup?term=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
         guard let url = URL(string: urlStr) else { return [] }
 
         var req = URLRequest(url: url)
@@ -58,8 +57,7 @@ actor RadarrApi {
         }
     }
 
-    /// Fetch movie catalog from Radarr
-    func getMovies() async throws -> [RadarrMovie] {
+    static func getMovies() async throws -> [RadarrMovie] {
         guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
         guard let url = URL(string: "\(cred.apiURL)/movie") else { return [] }
         var req = URLRequest(url: url)

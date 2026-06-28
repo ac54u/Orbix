@@ -1,16 +1,16 @@
 import Foundation
 
 // MARK: - Prowlarr API
-actor ProwlarrApi {
+enum ProwlarrApi {
     static let shared = ProwlarrApi()
-    private let session = URLSession(configuration: .ephemeral)
-    private let decoder = JSONDecoder()
 
-    private var credential: ServiceCredential? {
+    private static let session = URLSession(configuration: .ephemeral)
+    private static let decoder = JSONDecoder()
+
+    private static var credential: ServiceCredential? {
         CredentialsManager.shared.prowlarr
     }
 
-    // MARK: - Search
     struct ProwlarrSearchResult: Codable, Identifiable {
         let id: Int
         let title: String
@@ -28,7 +28,7 @@ actor ProwlarrApi {
         }
     }
 
-    func search(query: String, indexerIds: [Int] = []) async throws -> [SearchResult] {
+    static func search(query: String, indexerIds: [Int] = []) async throws -> [SearchResult] {
         guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
         var urlStr = "\(cred.apiURL)/search?query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&type=search"
         if !indexerIds.isEmpty {
@@ -43,8 +43,7 @@ actor ProwlarrApi {
         return results.map(\.toUnified)
     }
 
-    /// List available indexers
-    func getIndexers() async throws -> [(id: Int, name: String)] {
+    static func getIndexers() async throws -> [(id: Int, name: String)] {
         guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
         guard let url = URL(string: "\(cred.apiURL)/indexer") else { return [] }
         var req = URLRequest(url: url)
@@ -58,7 +57,6 @@ actor ProwlarrApi {
     }
 }
 
-// MARK: - Adapter
 private extension ProwlarrApi.ProwlarrSearchResult {
     var toUnified: SearchResult {
         SearchResult(

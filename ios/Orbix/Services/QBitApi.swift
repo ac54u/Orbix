@@ -456,7 +456,6 @@ actor QBitApi {
     }
 
     func setPreferences(_ json: [String: Any]) async throws {
-        guard let url = apiUrl("/api/v2/app/setPreferences") else { throw ApiError.invalidURL }
         let jsonData = try JSONSerialization.data(withJSONObject: json)
         let jsonStr = String(data: jsonData, encoding: .utf8) ?? "{}"
         let _ = try await authedPost("/api/v2/app/setPreferences", body: ["json": jsonStr])
