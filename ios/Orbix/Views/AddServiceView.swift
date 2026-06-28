@@ -56,7 +56,7 @@ struct AddServiceView: View {
                         }
                     }
                     .onChange(of: kind) { _, _ in
-                        if port.isEmpty || port == oldDefaultPort { port = defaultPort }
+                        if port.isEmpty { port = defaultPort }
                     }
                 }
 

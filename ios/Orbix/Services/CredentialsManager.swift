@@ -116,7 +116,7 @@ final class CredentialsManager: ObservableObject {
     }
 
     // MARK: - Connection Test
-    enum TestResult {
+    enum TestResult: Equatable {
         case ok
         case invalidHost
         case authFailed
