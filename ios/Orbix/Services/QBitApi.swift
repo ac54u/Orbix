@@ -285,6 +285,40 @@ actor QBitApi {
         ])
     }
 
+    func setTorrentLocation(_ hash: String, location: String) async throws {
+        let _ = try await authedPost("/api/v2/torrents/setLocation", body: [
+            "hashes": hash,
+            "location": location
+        ])
+    }
+
+    func renameTorrent(_ hash: String, name: String) async throws {
+        let _ = try await authedPost("/api/v2/torrents/rename", body: [
+            "hash": hash,
+            "name": name
+        ])
+    }
+
+    func setTorrentDownloadLimit(_ hash: String, limit: Int64) async throws {
+        let _ = try await authedPost("/api/v2/torrents/setDownloadLimit", body: [
+            "hashes": hash,
+            "limit": "\(limit)"
+        ])
+    }
+
+    func setTorrentUploadLimit(_ hash: String, limit: Int64) async throws {
+        let _ = try await authedPost("/api/v2/torrents/setUploadLimit", body: [
+            "hashes": hash,
+            "limit": "\(limit)"
+        ])
+    }
+
+    func toggleSequentialDownload(_ hash: String) async throws {
+        let _ = try await authedPost("/api/v2/torrents/toggleSequentialDownload", body: [
+            "hashes": hash
+        ])
+    }
+
     // MARK: - Add Torrent
     func addMagnet(_ urls: [String], category: String? = nil, tags: String? = nil, savePath: String? = nil) async throws -> String? {
         guard let url = apiUrl("/api/v2/torrents/add") else { throw ApiError.invalidURL }
