@@ -94,6 +94,7 @@ struct MainTabView: View {
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(10)
+                .allowsHitTesting(false)
             }
         }
     }
