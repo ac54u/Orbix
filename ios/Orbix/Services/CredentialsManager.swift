@@ -145,8 +145,12 @@ final class CredentialsManager: ObservableObject {
         username: String = "",
         password: String = ""
     ) async -> TestResult {
+        let cleanHost = host
+            .replacingOccurrences(of: "https://", with: "")
+            .replacingOccurrences(of: "http://", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
         let scheme = https ? "https" : "http"
-        let base = "\(scheme)://\(host):\(port)"
+        let base = "\(scheme)://\(cleanHost):\(port)"
 
         let endpoint: String
         var headers: [String: String] = [:]
@@ -178,10 +182,10 @@ final class CredentialsManager: ObservableObject {
             guard let http = response as? HTTPURLResponse else { return .unknown("无效响应") }
             if http.statusCode == 200 { return .ok }
             if http.statusCode == 401 { return .authFailed }
-            return .unknown("服务器返回 \(http.statusCode)")
+            return .unknown("服务器返回 \(http.statusCode)：\(endpoint)")
         } catch let err as URLError {
             if err.code == .timedOut { return .timeout }
-            return .invalidHost
+            return .unknown("无法连接 \(endpoint)\n\(err.localizedDescription)")
         } catch {
             return .unknown(error.localizedDescription)
         }

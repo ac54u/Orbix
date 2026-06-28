@@ -213,15 +213,19 @@ struct AddServiceView: View {
     }
 
     private func saveCredential(port portValue: Int) {
+        let cleanHost = host
+            .replacingOccurrences(of: "https://", with: "")
+            .replacingOccurrences(of: "http://", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
         var cred = ServiceCredential(
             kind: kind, name: name.isEmpty ? kind.rawValue : name,
-            host: host, port: portValue, https: https,
+            host: cleanHost, port: portValue, https: https,
             apiKey: apiKey, username: username, password: password
         )
         if let existing = existing {
             cred = ServiceCredential(
                 kind: kind, name: name.isEmpty ? existing.name : name,
-                host: host, port: portValue, https: https,
+                host: cleanHost, port: portValue, https: https,
                 apiKey: apiKey.isEmpty ? existing.apiKey : apiKey,
                 username: username, password: password
             )
