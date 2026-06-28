@@ -7,7 +7,8 @@ enum ProwlarrApi {
     private static let decoder = JSONDecoder()
 
     struct ProwlarrSearchResult: Codable, Identifiable {
-        let id: Int
+        let guid: String
+        var id: String { guid }
         let title: String
         let indexer: String?
         let size: Int64
@@ -17,24 +18,24 @@ enum ProwlarrApi {
         let publishDate: String?
 
         enum CodingKeys: String, CodingKey {
-            case id, title, indexer, size, seeders, leechers
-            case downloadUrl = "downloadUrl"
-            case publishDate = "publishDate"
+            case guid, title, indexer, size, seeders, leechers
+            case downloadUrl, publishDate
         }
     }
 
     @MainActor
     static func search(query: String, indexerIds: [Int] = []) async throws -> [SearchResult] {
         guard let cred = CredentialsManager.shared.prowlarr, !cred.apiKey.isEmpty else { return [] }
-        var urlStr = "\(cred.apiURL)/search?query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&type=search"
-        if !indexerIds.isEmpty {
-            urlStr += "&indexerIds=\(indexerIds.map(String.init).joined(separator: ","))"
-        }
-        guard let url = URL(string: urlStr) else { return [] }
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        guard let url = URL(string: "\(cred.apiURL)/search?query=\(encoded)&type=search") else { return [] }
 
         var req = URLRequest(url: url)
         req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
-        let (data, _) = try await session.data(for: req)
+        let (data, response) = try await session.data(for: req)
+        // Throw on non-200 so caller can show error
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw NSError(domain: "Prowlarr", code: http.statusCode)
+        }
         let results = (try? decoder.decode([ProwlarrSearchResult].self, from: data)) ?? []
         return results.map(\.toUnified)
     }
@@ -57,7 +58,7 @@ enum ProwlarrApi {
 private extension ProwlarrApi.ProwlarrSearchResult {
     var toUnified: SearchResult {
         SearchResult(
-            num: id,
+            num: guid.hashValue,
             descr: downloadUrl ?? "",
             fileName: title,
             fileSize: Int(size),
