@@ -183,7 +183,7 @@ struct SettingsView: View {
                                 .foregroundColor(AppColors.tertiaryLabel)
                         }
                         Spacer()
-                        Image(systemName: chevron.right)
+                        Image(systemName: "chevron.right")
                             .font(.system(size: 14))
                             .foregroundColor(AppColors.tertiaryLabel)
                     }

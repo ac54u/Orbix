@@ -580,11 +580,9 @@ struct TorrentDetailView: View {
 
     private func refresh() async {
         do {
-            // Fast: syncMainData (delta) + peers — ~1-2 reqs
             async let data = QBitApi.shared.syncMainData(rid: syncRid)
             async let pe = QBitApi.shared.getTorrentPeers(hash)
 
-            // Slow: files + trackers — every 5 polls (10s)
             let slowPoll = pollCount % 5 == 0
             var f: [TorrentFile]? = nil
             var tr: [TorrentTracker]? = nil
@@ -597,9 +595,7 @@ struct TorrentDetailView: View {
             try Task.checkCancellation()
 
             await MainActor.run {
-                if let t = sync?.torrents?[hash] {
-                    self.torrent = t
-                }
+                if let t = sync?.torrents?[hash] { self.torrent = t }
                 if let rid = sync?.rid { self.syncRid = rid }
                 if !peers.isEmpty { self.peers = peers }
                 if let f = f { self.files = f }
@@ -618,7 +614,6 @@ struct TorrentDetailView: View {
     }
 
     private func autoRefreshLoop() async {
-        // Initial full load
         if let t = try? await QBitApi.shared.getTorrentByHash(hash),
            let p = try? await QBitApi.shared.getProperties(hash),
            let f = try? await QBitApi.shared.getTorrentFiles(hash),
@@ -629,7 +624,6 @@ struct TorrentDetailView: View {
                 isLoading = false
             }
         }
-        // Delta loop
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { break }
@@ -648,10 +642,6 @@ struct TorrentDetailView: View {
             if let p = p { self.properties = p }
             self.files = f
             self.trackers = tr
-            self.peers = pe
-            if t != nil { loadError = nil }
-        }
-    }
             self.peers = pe
             if t != nil { loadError = nil }
         }
