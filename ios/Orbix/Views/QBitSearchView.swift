@@ -111,6 +111,11 @@ struct QBitSearchView: View {
                             Text("未找到相关资源")
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundColor(AppColors.secondaryLabel)
+                            if searchSource == .prowlarr {
+                                Text("请确认 Prowlarr 中已添加索引器")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AppColors.tertiaryLabel)
+                            }
                             Spacer()
                         }
                     } else {
