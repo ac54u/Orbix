@@ -16,6 +16,9 @@ struct SettingsView: View {
     @State private var downloadProgress: Double = 0
 
     @EnvironmentObject private var appLock: AppLockService
+    @ObservedObject private var creds = CredentialsManager.shared
+    @State private var showAddService = false
+    @State private var editingCred: ServiceCredential?
 
     var body: some View {
         NavigationStack {
@@ -41,6 +44,10 @@ struct SettingsView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             securityCard
 
+                            Text("服务").sectionHeader()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            servicesCard
+
                             Text("更新").sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             updateCard
@@ -53,6 +60,13 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("设置")
+            .sheet(isPresented: $showAddService) {
+                AddServiceView(existing: editingCred) { cred in
+                    creds.save(cred)
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
             .onAppear { loadInfo() }
         }
     }
@@ -145,6 +159,63 @@ struct SettingsView: View {
                     .fill(AppColors.card)
             )
         }
+    }
+
+    // MARK: - Services Card
+    private var servicesCard: some View {
+        VStack(spacing: 0) {
+            ForEach(creds.allCredentials) { cred in
+                Button {
+                    editingCred = cred
+                    showAddService = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: cred.kind.icon)
+                            .foregroundColor(AppColors.accent)
+                            .font(.system(size: 16))
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(cred.name)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(AppColors.label)
+                            Text(cred.kind.rawValue + " · \(cred.host):\(cred.port)")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(AppColors.tertiaryLabel)
+                        }
+                        Spacer()
+                        Image(systemName: chevron.right)
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.tertiaryLabel)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+
+                if cred.id != creds.allCredentials.last?.id {
+                    Divider().background(AppColors.separator)
+                }
+            }
+
+            Button {
+                editingCred = nil
+                showAddService = true
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.accent)
+                    Text("添加服务").font(.system(size: 14)).foregroundColor(AppColors.accent)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+        }
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.card)
+        )
     }
 
     // MARK: - Update Card
