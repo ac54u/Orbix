@@ -35,6 +35,23 @@ enum RadarrApi {
         }
     }
 
+    struct QualityProfile: Codable, Identifiable {
+        let id: Int
+        let name: String
+    }
+
+    struct RootFolder: Codable, Identifiable {
+        let id: Int
+        let path: String
+        let freeSpace: Int64?
+
+        enum CodingKeys: String, CodingKey {
+            case id, path, freeSpace
+        }
+    }
+
+    // MARK: - Lookup
+
     static func lookup(query: String) async throws -> [SearchResult] {
         guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
         let urlStr = "\(cred.apiURL)/movie/lookup?term=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
@@ -64,5 +81,56 @@ enum RadarrApi {
         req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
         let (data, _) = try await session.data(for: req)
         return (try? decoder.decode([RadarrMovie].self, from: data)) ?? []
+    }
+
+    // MARK: - Profiles & Root Folders
+    static func getQualityProfiles() async throws -> [QualityProfile] {
+        guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
+        guard let url = URL(string: "\(cred.apiURL)/qualityprofile") else { return [] }
+        var req = URLRequest(url: url)
+        req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
+        let (data, _) = try await session.data(for: req)
+        return (try? decoder.decode([QualityProfile].self, from: data)) ?? []
+    }
+
+    static func getRootFolders() async throws -> [RootFolder] {
+        guard let cred = credential, !cred.apiKey.isEmpty else { return [] }
+        guard let url = URL(string: "\(cred.apiURL)/rootfolder") else { return [] }
+        var req = URLRequest(url: url)
+        req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
+        let (data, _) = try await session.data(for: req)
+        return (try? decoder.decode([RootFolder].self, from: data)) ?? []
+    }
+
+    // MARK: - Add Movie
+    static func addMovie(
+        tmdbId: Int,
+        title: String,
+        year: Int,
+        qualityProfileId: Int,
+        rootFolderPath: String,
+        monitored: Bool = true,
+        searchOnAdd: Bool = true
+    ) async throws {
+        guard let cred = credential, !cred.apiKey.isEmpty else { return }
+        guard let url = URL(string: "\(cred.apiURL)/movie") else { return }
+
+        let body: [String: Any] = [
+            "tmdbId": tmdbId,
+            "title": title,
+            "year": year,
+            "qualityProfileId": qualityProfileId,
+            "rootFolderPath": rootFolderPath,
+            "monitored": monitored,
+            "addOptions": ["searchForMovie": searchOnAdd]
+        ]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.httpBody = jsonData
+        let _ = try await session.data(for: req)
     }
 }

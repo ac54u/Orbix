@@ -45,6 +45,14 @@ struct QBitSearchView: View {
     @State private var showDownloadSheet = false
     @State private var searchSource: SearchSource = .qBittorrent
 
+    @State private var showRadarrSheet = false
+    @State private var radarrResult: SearchResult?
+    @State private var qualityProfiles: [RadarrApi.QualityProfile] = []
+    @State private var rootFolders: [RadarrApi.RootFolder] = []
+    @State private var selectedQualityId = 0
+    @State private var selectedRootPath = ""
+    @State private var radarrMonitored = true
+
     @ObservedObject private var creds = CredentialsManager.shared
 
     private var availableSources: [SearchSource] {
@@ -109,6 +117,125 @@ struct QBitSearchView: View {
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                 }
+            }
+            .sheet(isPresented: $showRadarrSheet) {
+                radarrAddSheet
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
+        }
+    }
+
+    // MARK: - Radarr 添加弹窗
+    private var radarrAddSheet: some View {
+        NavigationStack {
+            List {
+                if let item = radarrResult {
+                    Section {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(item.fileName)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(AppColors.label)
+                        }
+                        .padding(.vertical, 6)
+                    } header: {
+                        Text("电影信息")
+                    }
+                }
+
+                Section {
+                    if qualityProfiles.isEmpty {
+                        HStack {
+                            Text("质量配置").foregroundColor(AppColors.secondaryLabel)
+                            Spacer()
+                            ProgressView().controlSize(.mini)
+                        }
+                    } else {
+                        Picker("质量配置", selection: $selectedQualityId) {
+                            ForEach(qualityProfiles) { p in
+                                Text(p.name).tag(p.id)
+                            }
+                        }
+                    }
+
+                    if rootFolders.isEmpty {
+                        HStack {
+                            Text("存储路径").foregroundColor(AppColors.secondaryLabel)
+                            Spacer()
+                            ProgressView().controlSize(.mini)
+                        }
+                    } else {
+                        Picker("存储路径", selection: $selectedRootPath) {
+                            ForEach(rootFolders) { f in
+                                Text(f.path).tag(f.path)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("下载配置")
+                }
+
+                Section {
+                    Toggle(isOn: $radarrMonitored) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(AppColors.accent)
+                            Text("立即监控并搜索")
+                                .foregroundColor(AppColors.label)
+                        }
+                    }
+                    .tint(AppColors.accent)
+                } footer: {
+                    Text("开启后将自动搜索并下载电影")
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppColors.mainBg)
+            .navigationTitle("添加到 Radarr")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") { showRadarrSheet = false }
+                        .foregroundColor(AppColors.secondaryLabel)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("添加") { confirmRadarrAdd() }
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+
+    private func confirmRadarrAdd() {
+        guard let item = radarrResult else { return }
+        let name = item.fileName
+        let title: String
+        let year: Int
+        // Parse "Movie Name (2024)" format
+        if let paren = name.lastIndex(of: "("), let close = name.lastIndex(of: ")"), paren < close {
+            let yearStr = String(name[name.index(after: paren)..<close])
+            title = String(name[..<paren]).trimmingCharacters(in: .whitespaces)
+            year = Int(yearStr) ?? Calendar.current.component(.year, from: Date())
+        } else {
+            title = name
+            year = Calendar.current.component(.year, from: Date())
+        }
+        Task {
+            do {
+                try await RadarrApi.addMovie(
+                    tmdbId: item.num,
+                    title: title,
+                    year: year,
+                    qualityProfileId: selectedQualityId,
+                    rootFolderPath: selectedRootPath,
+                    monitored: radarrMonitored
+                )
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                await MainActor.run { showRadarrSheet = false }
+            } catch {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
         }
     }
@@ -321,8 +448,23 @@ struct QBitSearchView: View {
                 Button {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()
-                    addOptions = AddTorrentOptions(result: item)
-                    showDownloadSheet = true
+                    if searchSource == .radarr {
+                        radarrResult = item
+                        Task {
+                            let p = (try? await RadarrApi.getQualityProfiles()) ?? []
+                            let r = (try? await RadarrApi.getRootFolders()) ?? []
+                            await MainActor.run {
+                                qualityProfiles = p
+                                rootFolders = r
+                                selectedQualityId = p.first?.id ?? 0
+                                selectedRootPath = r.first?.path ?? ""
+                                showRadarrSheet = true
+                            }
+                        }
+                    } else {
+                        addOptions = AddTorrentOptions(result: item)
+                        showDownloadSheet = true
+                    }
                 } label: {
                     Image(systemName: "icloud.and.arrow.down")
                         .font(.system(size: 16, weight: .semibold))
