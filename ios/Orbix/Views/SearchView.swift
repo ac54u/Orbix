@@ -57,10 +57,17 @@ struct SearchView: View {
                 }
             }
             .navigationTitle("搜索")
-            .searchable(text: $query, placement: .automatic, prompt: "搜索 torrent...")
-            .onChange(of: query) { _, _ in debounceSearch() }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        SearchModeState.shared.use141 = false
+                    } label: {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .foregroundColor(AppColors.accent)
+                            .font(.system(size: 14))
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     let impact = UIImpactFeedbackGenerator(style: .light)
                     impact.impactOccurred()
