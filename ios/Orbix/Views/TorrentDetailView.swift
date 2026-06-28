@@ -17,6 +17,7 @@ struct TorrentDetailView: View {
     @State private var announceCooldown = false
     @State private var syncRid = 0
     @State private var pollCount = 0
+    @State private var peersRid = 0
     @State private var showAdvancedSheet = false
     @State private var newLocation = ""
     @State private var newName = ""
@@ -578,56 +579,73 @@ struct TorrentDetailView: View {
         return torrent.isCompleted ? AppColors.success : AppColors.accent
     }
 
-    private func refresh() async {
+    // MARK: - Tiered Refresh Strategy
+    private func refreshInfoPeers() async {
         do {
+            // High-freq (2s): torrent info via syncMainData + peers via delta
             async let data = QBitApi.shared.syncMainData(rid: syncRid)
-            async let pe = QBitApi.shared.getTorrentPeers(hash)
+            async let (peers, newPeersRid) = QBitApi.shared.getTorrentPeers(hash, rid: peersRid)
 
-            let slowPoll = pollCount % 5 == 0
-            var f: [TorrentFile]? = nil
-            var tr: [TorrentTracker]? = nil
-            if slowPoll {
-                f = try? await QBitApi.shared.getTorrentFiles(hash)
-                tr = try? await QBitApi.shared.getTorrentTrackers(hash)
-            }
-
-            let (sync, peers) = try await (data, pe)
+            let (sync, peerResult, peerRid) = try await (data, peers, newPeersRid)
             try Task.checkCancellation()
 
             await MainActor.run {
                 if let t = sync?.torrents?[hash] { self.torrent = t }
                 if let rid = sync?.rid { self.syncRid = rid }
-                if !peers.isEmpty { self.peers = peers }
-                if let f = f { self.files = f }
-                if let tr = tr { self.trackers = tr }
+                if !peerResult.isEmpty { self.peers = peerResult }
+                self.peersRid = peerRid
                 pollCount += 1
-                isLoading = false
                 loadError = nil
             }
         } catch is CancellationError {
         } catch {
             await MainActor.run {
-                isLoading = false
                 if torrent == nil { loadError = error.localizedDescription }
             }
         }
     }
 
+    private func refreshFilesTrackers() async {
+        // Low-freq (8s): files + trackers (rarely change)
+        if let f = try? await QBitApi.shared.getTorrentFiles(hash) {
+            await MainActor.run { self.files = f }
+        }
+        if let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
+            await MainActor.run { self.trackers = tr }
+        }
+    }
+
     private func autoRefreshLoop() async {
+        // One-time: properties + initial full load
         if let t = try? await QBitApi.shared.getTorrentByHash(hash),
            let p = try? await QBitApi.shared.getProperties(hash),
            let f = try? await QBitApi.shared.getTorrentFiles(hash),
-           let tr = try? await QBitApi.shared.getTorrentTrackers(hash),
-           let pe = try? await QBitApi.shared.getTorrentPeers(hash) {
+           let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
+            let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
             await MainActor.run {
-                torrent = t; properties = p; files = f; trackers = tr; peers = pe
+                torrent = t; properties = p; files = f; trackers = tr; peers = pe; peersRid = rid
                 isLoading = false
             }
         }
+
+        // Parallel loops: info/peers every 2s, files/trackers every 8s
+        Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard !Task.isCancelled else { break }
+                await refreshInfoPeers()
+            }
+        }
+        Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                guard !Task.isCancelled else { break }
+                await refreshFilesTrackers()
+            }
+        }
+        // Keep this task alive until view disappears
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            guard !Task.isCancelled else { break }
-            await refresh()
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
         }
     }
 
@@ -636,13 +654,12 @@ struct TorrentDetailView: View {
         let p = try? await QBitApi.shared.getProperties(hash)
         let f = (try? await QBitApi.shared.getTorrentFiles(hash)) ?? []
         let tr = (try? await QBitApi.shared.getTorrentTrackers(hash)) ?? []
-        let pe = (try? await QBitApi.shared.getTorrentPeers(hash)) ?? []
+        let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
         await MainActor.run {
             if let t = t { self.torrent = t }
             if let p = p { self.properties = p }
-            self.files = f
-            self.trackers = tr
-            self.peers = pe
+            self.files = f; self.trackers = tr; self.peers = pe
+            self.peersRid = rid; self.syncRid = 0
             if t != nil { loadError = nil }
         }
     }
@@ -712,16 +729,16 @@ struct TorrentDetailView: View {
                     interval = min(maxInterval, interval * 13 / 8)
                 }
 
-                // Final sync for properties, files, trackers, peers
+                // Final sync
                 let p = try? await QBitApi.shared.getProperties(hash)
                 let f = try? await QBitApi.shared.getTorrentFiles(hash)
                 let tr = try? await QBitApi.shared.getTorrentTrackers(hash)
-                let pe = try? await QBitApi.shared.getTorrentPeers(hash)
+                let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
                 await MainActor.run {
                     if let p = p { properties = p }
                     if let f = f { files = f }
                     if let tr = tr { trackers = tr }
-                    if let pe = pe { peers = pe }
+                    peers = pe; peersRid = rid
                 }
 
             } catch {

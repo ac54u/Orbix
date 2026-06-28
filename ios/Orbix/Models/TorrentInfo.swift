@@ -330,8 +330,14 @@ struct TorrentPeer: Codable, Identifiable {
 }
 
 struct TorrentPeersResponse: Codable {
-    let peers: [String: TorrentPeer]
+    let peers: [String: TorrentPeer]?
+    let peersRemoved: [String]?
     let rid: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case peers, rid
+        case peersRemoved = "peers_removed"
+    }
 }
 
 struct SyncMainData: Codable {
