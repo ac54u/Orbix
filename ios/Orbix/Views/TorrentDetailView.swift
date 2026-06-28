@@ -616,18 +616,22 @@ struct TorrentDetailView: View {
     }
 
     private func autoRefreshLoop() async {
-        // One-time: properties + initial full load
-        if let t = try? await QBitApi.shared.getTorrentByHash(hash),
-           let p = try? await QBitApi.shared.getProperties(hash),
-           let f = try? await QBitApi.shared.getTorrentFiles(hash),
-           let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
-            let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
-            await MainActor.run {
-                torrent = t; properties = p; files = f; trackers = tr; peers = pe; peersRid = rid
-                isLoading = false
+        // 先快速拉取一条记录让 UI 立刻渲染
+        if let t = try? await QBitApi.shared.getTorrentByHash(hash) {
+            await MainActor.run { torrent = t; isLoading = false }
+            // 剩余数据后台加载，不阻塞 UI
+            if let p = try? await QBitApi.shared.getProperties(hash) {
+                await MainActor.run { properties = p }
             }
+            if let f = try? await QBitApi.shared.getTorrentFiles(hash) {
+                await MainActor.run { files = f }
+            }
+            if let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
+                await MainActor.run { trackers = tr }
+            }
+            let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
+            await MainActor.run { peers = pe; peersRid = rid }
         } else {
-            // Initial load failed — show error but keep page open
             await MainActor.run {
                 isLoading = false
                 loadError = "无法加载种子信息"
@@ -635,8 +639,6 @@ struct TorrentDetailView: View {
             return
         }
 
-        // Parallel loops: info/peers every 2s, files/trackers every 8s
-        // TaskGroup ensures inner loops cancel when parent .task is cancelled
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
                 while !Task.isCancelled {
