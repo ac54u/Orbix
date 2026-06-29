@@ -232,6 +232,7 @@ struct AddServiceView: View {
         }
         onSave(cred)
     }
+}
 
 #if DEBUG
 #Preview {
