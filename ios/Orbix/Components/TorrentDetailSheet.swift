@@ -164,6 +164,7 @@ struct TorrentDetailSheet: View {
                 print("[TorrentDetailSheet] download error: \(error)")
 #endif
             }
+        }
     }
 }
 

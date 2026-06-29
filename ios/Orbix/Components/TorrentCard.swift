@@ -57,6 +57,7 @@ struct TorrentCard: View {
                 print("[TorrentCard] image load error: \(error)")
 #endif
             }
+        }
     }
 }
 
