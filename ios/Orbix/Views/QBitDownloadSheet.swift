@@ -22,21 +22,21 @@ struct QBitDownloadSheet: View {
                     }
                     .padding(.vertical, 6)
                 } header: {
-                    Text("种子信息")
+                    Text(OrbixStrings.sectionTorrentInfo)
                 }
 
                 Section {
                     if categories.isEmpty {
                         HStack {
-                            Text("下载分类")
+                            Text(OrbixStrings.labelDownloadCategory)
                                 .foregroundColor(AppColors.secondaryLabel)
                             Spacer()
-                            Text("无可用分类")
+                            Text(OrbixStrings.miscNoCategories)
                                 .foregroundColor(AppColors.tertiaryLabel)
                         }
                     } else {
-                        Picker("下载分类", selection: $category) {
-                            Text("无分类").tag("")
+                        Picker(OrbixStrings.labelDownloadCategory, selection: $category) {
+                            Text(OrbixStrings.miscNoCategory).tag("")
                             ForEach(categories, id: \.self) { cat in
                                 Text(cat).tag(cat)
                             }
@@ -44,31 +44,31 @@ struct QBitDownloadSheet: View {
                     }
 
                     HStack {
-                        Text("保存路径")
+                        Text(OrbixStrings.labelSavePath)
                             .foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("默认路径", text: $savePath)
+                        TextField(OrbixStrings.phDefaultPath, text: $savePath)
                             .multilineTextAlignment(.trailing)
                             .foregroundColor(AppColors.tertiaryLabel)
                     }
                 } header: {
-                    Text("下载设置")
+                    Text(OrbixStrings.sectionDownloadSettings)
                 } footer: {
-                    Text("留空则使用 qBittorrent 默认下载路径")
+                    Text(OrbixStrings.infoDefaultPathHint)
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg)
-            .navigationTitle("添加任务")
+            .navigationTitle(OrbixStrings.navAddTask)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") { dismiss() }
+                    Button(OrbixStrings.btnCancel) { dismiss() }
                         .foregroundColor(AppColors.secondaryLabel)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("确定下载") { confirmDownload() }
+                    Button(OrbixStrings.btnConfirmDownload) { confirmDownload() }
                         .fontWeight(.bold)
                         .foregroundColor(AppColors.accent)
                 }

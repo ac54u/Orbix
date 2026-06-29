@@ -36,19 +36,19 @@ struct SettingsView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            Text("服务器").sectionHeader()
+                            Text(OrbixStrings.sectionServer).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             serverCard
 
-                            Text("安全").sectionHeader()
+                            Text(OrbixStrings.sectionSecurity).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             securityCard
 
-                            Text("服务").sectionHeader()
+                            Text(OrbixStrings.sectionServices).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             servicesCard
 
-                            Text("更新").sectionHeader()
+                            Text(OrbixStrings.sectionUpdate).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             updateCard
 
@@ -59,7 +59,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle(OrbixStrings.navSettings)
             .sheet(isPresented: $showAddService) {
                 AddServiceView(existing: editingCred) { cred in
                     creds.save(cred)
@@ -74,11 +74,11 @@ struct SettingsView: View {
     // MARK: - Server Card
     private var serverCard: some View {
         VStack(spacing: 0) {
-            serverRow(label: "名称", value: serverName)
+            serverRow(label: OrbixStrings.sectionName, value: serverName)
             Divider().background(AppColors.separator)
 
             HStack {
-                Text("地址")
+                Text(OrbixStrings.sectionAddress)
                     .font(.system(size: 14))
                     .foregroundColor(AppColors.secondaryLabel)
                 Spacer()
@@ -96,11 +96,11 @@ struct SettingsView: View {
 
             if !serverVersion.isEmpty {
                 Divider().background(AppColors.separator)
-                serverRow(label: "qBittorrent 版本", value: serverVersion)
+                serverRow(label: OrbixStrings.miscQBVersion, value: serverVersion)
             }
 
             Divider().background(AppColors.separator)
-            serverRow(label: "用户", value: username)
+            serverRow(label: OrbixStrings.sectionUser, value: username)
 
             Divider().background(AppColors.separator)
 
@@ -109,7 +109,7 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Text("切换服务器")
+                    Text(OrbixStrings.btnSwitchServer)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppColors.danger)
                     Spacer()
@@ -135,7 +135,7 @@ struct SettingsView: View {
                         Image(systemName: appLock.hasFaceID ? "faceid" : "touchid")
                             .font(.system(size: 18))
                             .foregroundColor(AppColors.accent)
-                        Text(appLock.hasFaceID ? "Face ID" : "生物识别")
+                        Text(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric)
                             .font(.system(size: 15))
                             .foregroundColor(AppColors.label)
                     }
@@ -146,7 +146,7 @@ struct SettingsView: View {
 
                 if appLock.isEnabled {
                     Divider().background(AppColors.separator)
-                    Text("应用进入后台超过 8 秒后将自动锁定")
+                    Text(OrbixStrings.infoAppLockHint)
                         .font(.system(size: 12))
                         .foregroundColor(AppColors.tertiaryLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -204,7 +204,7 @@ struct SettingsView: View {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
                         .foregroundColor(AppColors.accent)
-                    Text("添加服务").font(.system(size: 14)).foregroundColor(AppColors.accent)
+                    Text(OrbixStrings.navAddService).font(.system(size: 14)).foregroundColor(AppColors.accent)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
@@ -221,7 +221,7 @@ struct SettingsView: View {
     // MARK: - Update Card
     private var updateCard: some View {
         VStack(spacing: 0) {
-            serverRow(label: "当前版本", value: "v\(appVersion)")
+            serverRow(label: OrbixStrings.sectionVersion, value: "v\(appVersion)")
 
             Divider().background(AppColors.separator)
 
@@ -229,7 +229,7 @@ struct SettingsView: View {
                 checkUpdate()
             } label: {
                 HStack {
-                    Text("检查更新")
+                    Text(OrbixStrings.btnCheckUpdate)
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.secondaryLabel)
                     Spacer()
@@ -254,7 +254,7 @@ struct SettingsView: View {
                     updateReleaseCard(release)
                         .padding(12)
                 } else if let error = check.error {
-                    Text("检查失败: \(error)")
+                    Text("\(OrbixStrings.errCheckFailed): \(error)")
                         .font(.system(size: 12))
                         .foregroundColor(AppColors.danger)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -265,7 +265,7 @@ struct SettingsView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 14))
                             .foregroundColor(AppColors.success)
-                        Text("已是最新版本")
+                        Text(OrbixStrings.msgUpToDate)
                             .font(.system(size: 13))
                             .foregroundColor(AppColors.success)
                         Spacer()
@@ -288,7 +288,7 @@ struct SettingsView: View {
                     }
                     .frame(height: 4)
                     HStack {
-                        Text("正在下载...")
+                        Text(OrbixStrings.msgDownloading)
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.tertiaryLabel)
                         Spacer()
@@ -353,7 +353,7 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Text(isDownloading ? "下载中..." : "下载并安装")
+                    Text(isDownloading ? OrbixStrings.msgDownloadingDot : OrbixStrings.btnDownloadInstall)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white)
                     Spacer()
@@ -441,3 +441,9 @@ struct SettingsView: View {
         root.present(vc, animated: true)
     }
 }
+
+#if DEBUG
+#Preview {
+    SettingsView(onLogout: {})
+}
+#endif

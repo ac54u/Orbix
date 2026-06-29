@@ -39,7 +39,7 @@ struct LoginView: View {
                             Text("Orbix")
                                 .font(.system(size: 22, weight: .bold, design: .rounded))
                                 .foregroundColor(.primary)
-                            Text("配置 qBittorrent 连接")
+                            Text(OrbixStrings.infoConfigHint)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.secondary)
                         }
@@ -51,36 +51,36 @@ struct LoginView: View {
                 .listRowInsets(EdgeInsets())
 
                 Section {
-                    FormRow(icon: "tag.fill", title: "名称（可选）") {
-                        TextField("例如：家庭 NAS", text: $name)
+                    FormRow(icon: "tag.fill", title: OrbixStrings.miscNameOptional) {
+                        TextField(OrbixStrings.phServerName, text: $name)
                     }
-                    FormRow(icon: "server.rack", title: "主机地址") {
-                        TextField("IP 或域名", text: $host)
+                    FormRow(icon: "server.rack", title: OrbixStrings.miscHost) {
+                        TextField(OrbixStrings.phHostAddress, text: $host)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .keyboardType(.URL)
                     }
-                    FormRow(icon: "network", title: "端口") {
+                    FormRow(icon: "network", title: OrbixStrings.miscPort) {
                         TextField("8080", text: $port)
                             .keyboardType(.numberPad)
                     }
                 } header: {
-                    Text("服务器信息")
+                    Text(OrbixStrings.sectionServerInfo)
                 }
 
                 Section {
-                    FormRow(icon: "person.fill", title: "用户名") {
+                    FormRow(icon: "person.fill", title: OrbixStrings.miscUsername) {
                         TextField("admin", text: $username)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                     }
 
-                    FormRow(icon: "lock.fill", title: "密码") {
+                    FormRow(icon: "lock.fill", title: OrbixStrings.miscPassword) {
                         HStack {
                             if showPassword {
-                                TextField("输入密码", text: $password)
+                                TextField(OrbixStrings.phPassword, text: $password)
                             } else {
-                                SecureField("输入密码", text: $password)
+                                SecureField(OrbixStrings.phPassword, text: $password)
                             }
                             Button {
                                 showPassword.toggle()
@@ -92,7 +92,7 @@ struct LoginView: View {
                         }
                     }
                 } header: {
-                    Text("认证")
+                    Text(OrbixStrings.sectionAuth)
                 }
 
                 Section {
@@ -100,12 +100,12 @@ struct LoginView: View {
                         Image(systemName: "lock.shield.fill")
                             .foregroundColor(.secondary)
                             .frame(width: 28, alignment: .leading)
-                        Toggle("启用 HTTPS", isOn: $https)
+                        Toggle(OrbixStrings.miscEnableHTTPS, isOn: $https)
                             .tint(AppColors.accent)
                     }
                 } footer: {
                     if https {
-                        Text("确保你的 qBittorrent 已配置 SSL 证书")
+                        Text(OrbixStrings.infoSSLHint)
                     }
                 }
 
@@ -121,7 +121,7 @@ struct LoginView: View {
                                 ProgressView()
                                     .tint(AppColors.accent)
                             } else {
-                                Text("测试连接")
+                                Text(OrbixStrings.btnTestConnection)
                                     .font(.system(size: 15, weight: .semibold))
                             }
                             Spacer()
@@ -132,7 +132,7 @@ struct LoginView: View {
                         HStack {
                             Image(systemName: result.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
                                 .foregroundColor(result.isSuccess ? .green : .red)
-                            Text(result.isSuccess ? "连接成功" : result.message)
+                            Text(result.isSuccess ? OrbixStrings.miscConnectSuccess : result.message)
                                 .font(.system(size: 13))
                                 .foregroundColor(result.isSuccess ? .green : .red)
                         }
@@ -140,20 +140,20 @@ struct LoginView: View {
                         .padding(.vertical, 4)
                     }
                 } footer: {
-                    Text("测试将尝试使用当前配置连接到 qBittorrent")
+                    Text(OrbixStrings.infoTestHint)
                 }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg.ignoresSafeArea())
-            .navigationTitle(server != nil ? "编辑服务器" : "添加服务器")
+            .navigationTitle(server != nil ? OrbixStrings.navEditServer : OrbixStrings.navAddServer)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(OrbixStrings.btnCancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") { save() }
+                    Button(OrbixStrings.btnSave) { save() }
                         .font(.system(size: 15, weight: .bold))
                         .disabled(host.isEmpty || username.isEmpty)
                 }
@@ -194,6 +194,12 @@ struct LoginView: View {
         )
     }
 }
+
+#if DEBUG
+#Preview {
+    LoginView { _ in }
+}
+#endif
 
 private struct FormRow<Content: View>: View {
     let icon: String

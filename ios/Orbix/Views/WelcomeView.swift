@@ -16,25 +16,25 @@ struct WelcomeView: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
 
-                Text("qBittorrent 客户端")
+                Text(OrbixStrings.welcomeQBittorrent)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.secondary)
 
                 VStack(spacing: 12) {
                     FeatureTile(
                         icon: "plus.app.fill",
-                        title: "添加服务器",
-                        subtitle: "配置你的 qBittorrent 服务器地址"
+                        title: OrbixStrings.navAddServer,
+                        subtitle: OrbixStrings.welcomeSubtitle1
                     )
                     FeatureTile(
                         icon: "link",
-                        title: "建立连接",
-                        subtitle: "快速连接到远程或本地服务器"
+                        title: OrbixStrings.welcomeAddServer,
+                        subtitle: OrbixStrings.welcomeSubtitle2
                     )
                     FeatureTile(
                         icon: "arrow.down.doc.fill",
-                        title: "管理种子",
-                        subtitle: "轻松管理和监控所有种子任务"
+                        title: OrbixStrings.welcomeManageTorrents,
+                        subtitle: OrbixStrings.welcomeSubtitle3
                     )
                 }
                 .padding(.horizontal, 20)
@@ -49,7 +49,7 @@ struct WelcomeView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 18, weight: .semibold))
-                        Text("开始配置")
+                        Text(OrbixStrings.btnStartSetup)
                             .font(.system(size: 16, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -68,6 +68,12 @@ struct WelcomeView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    WelcomeView(onAddServer: {})
+}
+#endif
 
 private struct FeatureTile: View {
     let icon: String

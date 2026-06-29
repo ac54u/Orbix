@@ -11,7 +11,7 @@ struct TorrentDetailTrackerSheet: View {
             List {
                 Section {
                     HStack(spacing: 8) {
-                        TextField("输入 Tracker URL ...", text: $newTrackerURL)
+                        TextField(OrbixStrings.phTrackerURL, text: $newTrackerURL)
                             .font(.system(size: 14, design: .monospaced))
                             .foregroundColor(AppColors.label)
                         Button {
@@ -33,7 +33,7 @@ struct TorrentDetailTrackerSheet: View {
                         .disabled(newTrackerURL.isEmpty)
                     }
                 } header: {
-                    Text("添加 Tracker")
+                    Text(OrbixStrings.sectionAddTracker)
                 }
 
                 Section {
@@ -47,7 +47,7 @@ struct TorrentDetailTrackerSheet: View {
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(trackerStatusColor(tracker.status))
                                 Spacer()
-                                Text("种子 \(tracker.numSeeds)")
+                                Text("\(OrbixStrings.miscSeedsPrefix)\(tracker.numSeeds)")
                                     .font(.system(size: 11))
                                     .foregroundColor(AppColors.tertiaryLabel)
                             }
@@ -67,22 +67,22 @@ struct TorrentDetailTrackerSheet: View {
                                     }
                                 }
                             } label: {
-                                Label("删除", systemImage: "trash")
+                                Label(OrbixStrings.btnDelete, systemImage: "trash")
                             }
                         }
                     }
                 } header: {
-                    Text("当前 Trackers (\(trackers.count))")
+                    Text("\(OrbixStrings.sectionCurrentTrackers) (\(trackers.count))")
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg)
-            .navigationTitle("Tracker 管理")
+            .navigationTitle(OrbixStrings.navTrackerManagement)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(OrbixStrings.btnDone) { dismiss() }
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.accent)
                 }
@@ -99,3 +99,16 @@ struct TorrentDetailTrackerSheet: View {
         }
     }
 }
+
+#if DEBUG
+struct TrackerSheetPreview: View {
+    @State private var trackers: [TorrentTracker] = [
+        TorrentTracker(url: "udp://tracker.opentrackr.org:1337/announce", status: 2, tier: 0, numPeers: 42, numSeeds: 156, numLeeches: 23, numDownloaded: 5000, msg: ""),
+        TorrentTracker(url: "https://tracker.example.com:443/announce", status: 4, tier: 1, numPeers: 10, numSeeds: 80, numLeeches: 5, numDownloaded: 1200, msg: "")
+    ]
+    var body: some View {
+        TorrentDetailTrackerSheet(hash: "abc", trackers: $trackers)
+    }
+}
+#Preview { TrackerSheetPreview() }
+#endif

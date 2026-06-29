@@ -39,3 +39,9 @@ struct GlobalSpeedPill: View {
         )
     }
 }
+
+#if DEBUG
+#Preview {
+    GlobalSpeedPill(dl: 10240000, up: 5120000)
+}
+#endif

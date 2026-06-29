@@ -16,3 +16,9 @@ struct GlowingLogo: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    GlowingLogo(size: 80)
+}
+#endif

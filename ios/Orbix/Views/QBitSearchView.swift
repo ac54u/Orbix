@@ -8,7 +8,7 @@ enum SearchSource: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .qBittorrent: return "内置搜索"
+        case .qBittorrent: return OrbixStrings.miscBuiltInSearch
         case .prowlarr: return "Prowlarr"
         case .radarr: return "Radarr"
         }
@@ -75,7 +75,7 @@ struct QBitSearchView: View {
                             Spacer()
                             ProgressView()
                                 .tint(AppColors.accent)
-                            Text("正在全网检索...")
+                            Text(OrbixStrings.msgSearchingAll)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(AppColors.secondaryLabel)
                             Spacer()
@@ -99,11 +99,11 @@ struct QBitSearchView: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 40, weight: .light))
                                 .foregroundColor(AppColors.tertiaryLabel)
-                            Text("未找到相关资源")
+                            Text(OrbixStrings.errNoResults)
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundColor(AppColors.secondaryLabel)
                             if searchSource == .prowlarr {
-                                Text("请确认 Prowlarr 中已添加索引器")
+                                Text(OrbixStrings.infoProwlarrHint)
                                     .font(.system(size: 12))
                                     .foregroundColor(AppColors.tertiaryLabel)
                             }
@@ -114,7 +114,7 @@ struct QBitSearchView: View {
                     }
                 }
             }
-            .navigationTitle("探索")
+            .navigationTitle(OrbixStrings.navExplore)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -126,7 +126,7 @@ struct QBitSearchView: View {
                     }
                 }
             }
-            .searchable(text: $query, placement: .automatic, prompt: "输入关键字或 Hash...")
+            .searchable(text: $query, placement: .automatic, prompt: OrbixStrings.phSearchKeyword)
             .onChange(of: query) { _, _ in debounceSearch() }
             .onAppear {
                 loadPlugins()
@@ -154,10 +154,9 @@ struct QBitSearchView: View {
                     )
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
-                }
-            }
         }
     }
+}
 
     // MARK: - 数据源选择
     private var sourceBar: some View {
@@ -193,7 +192,7 @@ struct QBitSearchView: View {
     private var pluginBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                pluginChip("all", label: "全部")
+                pluginChip("all", label: OrbixStrings.filterAll)
                 ForEach(plugins) { plugin in
                     if plugin.enabled {
                         pluginChip(plugin.id, label: plugin.name)
@@ -238,7 +237,7 @@ struct QBitSearchView: View {
             LazyVStack(spacing: 12) {
                 if !results.isEmpty {
                     HStack {
-                        Text("\(results.count) 个结果")
+                        Text(String(format: OrbixStrings.miscCountResults, results.count))
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppColors.secondaryLabel)
                             .textCase(.uppercase)
@@ -354,7 +353,7 @@ struct QBitSearchView: View {
         } catch {
             await MainActor.run {
                 isLoading = false
-                searchError = "内置搜索失败: \(error.localizedDescription)"
+                searchError = OrbixStrings.errBuiltInSearchFailed + ": " + error.localizedDescription
             }
         }
     }
@@ -369,7 +368,7 @@ struct QBitSearchView: View {
         } catch {
             await MainActor.run {
                 isLoading = false
-                searchError = "Prowlarr 连接失败: \(error.localizedDescription)"
+                searchError = OrbixStrings.errProwlarrFailed + ": " + error.localizedDescription
             }
         }
     }
@@ -384,8 +383,14 @@ struct QBitSearchView: View {
         } catch {
             await MainActor.run {
                 isLoading = false
-                searchError = "Radarr 连接失败: \(error.localizedDescription)"
+                searchError = OrbixStrings.errRadarrFailed + ": " + error.localizedDescription
             }
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    QBitSearchView()
+}
+#endif

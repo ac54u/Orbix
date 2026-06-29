@@ -41,27 +41,27 @@ struct TorrentDetailFileSheet: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg)
-            .navigationTitle("文件优先级")
+            .navigationTitle(OrbixStrings.navFilePriority)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") { dismiss(); selectedFileIndices = [] }
+                    Button(OrbixStrings.btnCancel) { dismiss(); selectedFileIndices = [] }
                         .foregroundColor(AppColors.secondaryLabel)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if !selectedFileIndices.isEmpty {
                         Menu {
-                            Button { setPrio(0) } label: { Label("忽略", systemImage: "nosign") }
-                            Button { setPrio(1) } label: { Label("正常", systemImage: "minus") }
-                            Button { setPrio(6) } label: { Label("高", systemImage: "arrow.up") }
-                            Button { setPrio(7) } label: { Label("最高", systemImage: "arrow.up.to.line") }
+                            Button { setPrio(0) } label: { Label(OrbixStrings.btnIgnore, systemImage: "nosign") }
+                            Button { setPrio(1) } label: { Label(OrbixStrings.btnNormal, systemImage: "minus") }
+                            Button { setPrio(6) } label: { Label(OrbixStrings.btnHigh, systemImage: "arrow.up") }
+                            Button { setPrio(7) } label: { Label(OrbixStrings.btnMax, systemImage: "arrow.up.to.line") }
                         } label: {
-                            Text("批量 (\(selectedFileIndices.count))")
+                            Text("\(OrbixStrings.miscBatch) (\(selectedFileIndices.count))")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(AppColors.accent)
                         }
                     }
-                    Button("完成") { dismiss(); selectedFileIndices = [] }
+                    Button(OrbixStrings.btnDone) { dismiss(); selectedFileIndices = [] }
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.accent)
                 }
@@ -72,10 +72,10 @@ struct TorrentDetailFileSheet: View {
     private func priorityBadge(_ priority: Int) -> some View {
         let (label, color): (String, Color) = {
             switch priority {
-            case 0: return ("忽略", AppColors.secondaryLabel)
-            case 6: return ("高", AppColors.accent)
-            case 7: return ("最高", AppColors.success)
-            default: return ("正常", AppColors.tertiaryLabel)
+            case 0: return (OrbixStrings.btnIgnore, AppColors.secondaryLabel)
+            case 6: return (OrbixStrings.btnHigh, AppColors.accent)
+            case 7: return (OrbixStrings.btnMax, AppColors.success)
+            default: return (OrbixStrings.btnNormal, AppColors.tertiaryLabel)
             }
         }()
         return Text(label)
@@ -101,3 +101,20 @@ struct TorrentDetailFileSheet: View {
         }
     }
 }
+
+#if DEBUG
+struct FileSheetPreview: View {
+    @State private var indices = Set([0])
+    var body: some View {
+        TorrentDetailFileSheet(
+            hash: "abc",
+            files: [
+                TorrentFile(index: 0, name: "example.mp4", size: 1_073_741_824, progress: 0.8, priority: 1, isSeed: false),
+                TorrentFile(index: 1, name: "example.nfo", size: 4096, progress: 1.0, priority: 1, isSeed: false)
+            ],
+            selectedFileIndices: $indices
+        )
+    }
+}
+#Preview { FileSheetPreview() }
+#endif

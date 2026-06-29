@@ -83,7 +83,7 @@ struct TorrentDetailView: View {
                 }
             }
         }
-        .navigationTitle("详情")
+        .navigationTitle(OrbixStrings.navDetails)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -109,16 +109,16 @@ struct TorrentDetailView: View {
                 }
             }
         }
-        .alert("删除种子", isPresented: $showDeleteConfirmation) {
-            Button("仅删除任务", role: .destructive) {
+        .alert(OrbixStrings.miscDeleteTorrentTitle, isPresented: $showDeleteConfirmation) {
+            Button(OrbixStrings.btnDeleteTaskOnly, role: .destructive) {
                 delete(false)
             }
-            Button("删除任务及文件", role: .destructive) {
+            Button(OrbixStrings.btnDeleteTaskFiles, role: .destructive) {
                 delete(true)
             }
-            Button("取消", role: .cancel) {}
+            Button(OrbixStrings.btnCancel, role: .cancel) {}
         } message: {
-            Text("确定要删除此种子吗？")
+            Text(OrbixStrings.infoDeleteConfirm)
         }
         .sheet(isPresented: $showAdvancedSheet) {
             TorrentDetailAdvancedSheet(
@@ -221,28 +221,28 @@ struct TorrentDetailView: View {
         HStack(spacing: 12) {
             ActionTile(
                 icon: torrent.statusBadge.isPaused ? "play.fill" : "pause.fill",
-                label: torrent.statusBadge.isPaused ? "启动" : "暂停",
+                label: torrent.statusBadge.isPaused ? OrbixStrings.btnStart : OrbixStrings.btnPause,
                 color: torrent.statusBadge.isPaused ? AppColors.success : AppColors.warning,
                 isLoading: processingAction == .pause,
                 action: { performAction(.pause, torrent: torrent) }
             )
             ActionTile(
                 icon: "bolt.fill",
-                label: "强制",
+                label: OrbixStrings.btnForce,
                 color: AppColors.accent,
                 isLoading: processingAction == .force,
                 action: { performAction(.force, torrent: torrent) }
             )
             ActionTile(
                 icon: "checkmark.shield.fill",
-                label: "校验",
+                label: OrbixStrings.btnRecheck,
                 color: AppColors.accent,
                 isLoading: processingAction == .recheck,
                 action: { performAction(.recheck, torrent: torrent) }
             )
             ActionTile(
                 icon: announceCooldown ? "clock.fill" : "antenna.radiowaves.left.and.right",
-                label: announceCooldown ? "请稍候" : "汇报",
+                label: announceCooldown ? OrbixStrings.btnWait : OrbixStrings.btnAnnounce,
                 color: announceCooldown ? AppColors.secondaryLabel : AppColors.accent,
                 isLoading: processingAction == .announce || announceCooldown,
                 action: { performAction(.announce, torrent: torrent) }
@@ -252,23 +252,23 @@ struct TorrentDetailView: View {
 
     private func transferSection(_ torrent: TorrentInfo) -> some View {
         VStack(spacing: 0) {
-            SectionHeader(title: "传输")
+            SectionHeader(title: OrbixStrings.sectionTransfer)
             VStack(spacing: 0) {
-                DetailRow(icon: "arrow.down.circle.fill", iconColor: AppColors.accent, label: "下载速度", value: formatSpeed(torrent.dlspeed), valueColor: AppColors.accent)
+                DetailRow(icon: "arrow.down.circle.fill", iconColor: AppColors.accent, label: OrbixStrings.labelDownloadSpeed, value: formatSpeed(torrent.dlspeed), valueColor: AppColors.accent)
                 Divider().padding(.leading, 44)
-                DetailRow(icon: "arrow.up.circle.fill", iconColor: AppColors.success, label: "上传速度", value: formatSpeed(torrent.upspeed), valueColor: AppColors.success)
+                DetailRow(icon: "arrow.up.circle.fill", iconColor: AppColors.success, label: OrbixStrings.labelUploadSpeed, value: formatSpeed(torrent.upspeed), valueColor: AppColors.success)
                 Divider().padding(.leading, 44)
-                DetailRow(icon: "tray.and.arrow.down.fill", iconColor: AppColors.secondaryLabel, label: "已下载", value: formatBytes(torrent.downloaded))
+                DetailRow(icon: "tray.and.arrow.down.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelDownloaded, value: formatBytes(torrent.downloaded))
                 Divider().padding(.leading, 44)
-                DetailRow(icon: "tray.and.arrow.up.fill", iconColor: AppColors.secondaryLabel, label: "已上传", value: formatBytes(torrent.uploaded))
+                DetailRow(icon: "tray.and.arrow.up.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelUploaded, value: formatBytes(torrent.uploaded))
                 Divider().padding(.leading, 44)
-                DetailRow(icon: "chart.pie.fill", iconColor: AppColors.secondaryLabel, label: "分享率", value: String(format: "%.2f", torrent.ratio), valueColor: torrent.ratio >= 1.0 ? AppColors.success : AppColors.secondaryLabel)
+                DetailRow(icon: "chart.pie.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelRatio, value: String(format: "%.2f", torrent.ratio), valueColor: torrent.ratio >= 1.0 ? AppColors.success : AppColors.secondaryLabel)
                 if torrent.eta > 0 {
                     Divider().padding(.leading, 44)
-                    DetailRow(icon: "timer", iconColor: AppColors.secondaryLabel, label: "预计完成", value: torrent.etaFormatted)
+                    DetailRow(icon: "timer", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelETA, value: torrent.etaFormatted)
                 }
                 Divider().padding(.leading, 44)
-                DetailRow(icon: "person.2.fill", iconColor: AppColors.secondaryLabel, label: "种子/吸血", value: "\(String(torrent.numSeeds)) / \(String(torrent.numLeechs))")
+                DetailRow(icon: "person.2.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelSeeds, value: "\(String(torrent.numSeeds)) / \(String(torrent.numLeechs))")
             }
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -279,9 +279,9 @@ struct TorrentDetailView: View {
 
     private func infoSection(_ props: TorrentProperties) -> some View {
         VStack(spacing: 0) {
-            SectionHeader(title: "信息")
+            SectionHeader(title: OrbixStrings.sectionInfo)
             VStack(spacing: 0) {
-                DetailRow(icon: "internaldrive.fill", iconColor: AppColors.secondaryLabel, label: "总大小", value: formatBytes(props.totalSize))
+                DetailRow(icon: "internaldrive.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelTotalSize, value: formatBytes(props.totalSize))
                 Divider().padding(.leading, 44)
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -290,7 +290,7 @@ struct TorrentDetailView: View {
                             .font(.system(size: 16))
                             .foregroundColor(AppColors.secondaryLabel)
                             .frame(width: 24)
-                        Text("保存路径")
+                        Text(OrbixStrings.labelSavePath)
                             .font(.system(size: 15))
                             .foregroundColor(AppColors.label)
                         Spacer()
@@ -307,11 +307,11 @@ struct TorrentDetailView: View {
 
                 if !props.category.isEmpty {
                     Divider().padding(.leading, 44)
-                    DetailRow(icon: "square.grid.2x2.fill", iconColor: AppColors.secondaryLabel, label: "分类", value: props.category)
+                    DetailRow(icon: "square.grid.2x2.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelCategory, value: props.category)
                 }
                 if !props.tags.isEmpty {
                     Divider().padding(.leading, 44)
-                    DetailRow(icon: "tag.fill", iconColor: AppColors.secondaryLabel, label: "标签", value: props.tags)
+                    DetailRow(icon: "tag.fill", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelTags, value: props.tags)
                 }
 
                 Divider().padding(.leading, 44)
@@ -345,12 +345,12 @@ struct TorrentDetailView: View {
     private var filesSection: some View {
         VStack(spacing: 0) {
             HStack {
-                SectionHeader(title: "文件 (\(files.count))")
+                SectionHeader(title: "\(OrbixStrings.miscAddModeFile) (\(files.count))")
                 Spacer()
                 Button {
                     showFileSheet = true
                 } label: {
-                    Text("管理")
+                    Text(OrbixStrings.btnManage)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppColors.accent)
                 }
@@ -406,12 +406,12 @@ struct TorrentDetailView: View {
         let added = props?.addedOn ?? torrent.addedOn
         let completed = props?.completionOn ?? torrent.completionOn
         return VStack(spacing: 0) {
-            SectionHeader(title: "时间")
+            SectionHeader(title: OrbixStrings.sectionTime)
             VStack(spacing: 0) {
-                DetailRow(icon: "calendar.badge.plus", iconColor: AppColors.secondaryLabel, label: "添加时间", value: formatUnixTime(added))
+                DetailRow(icon: "calendar.badge.plus", iconColor: AppColors.secondaryLabel, label: OrbixStrings.labelAddTime, value: formatUnixTime(added))
                 if completed > 0 {
                     Divider().padding(.leading, 44)
-                    DetailRow(icon: "checkmark.seal.fill", iconColor: AppColors.success, label: "完成时间", value: formatUnixTime(completed))
+                    DetailRow(icon: "checkmark.seal.fill", iconColor: AppColors.success, label: OrbixStrings.labelCompleteTime, value: formatUnixTime(completed))
                 }
             }
             .background(
@@ -430,7 +430,7 @@ struct TorrentDetailView: View {
                 Button {
                     showTrackerSheet = true
                 } label: {
-                    Text("管理")
+                    Text(OrbixStrings.btnManage)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppColors.accent)
                 }
@@ -449,7 +449,7 @@ struct TorrentDetailView: View {
                                 .foregroundColor(trackerStatusColor(tracker.status))
                             Spacer()
                         }
-                        Text("种子：\(tracker.numSeeds) • 下载：\(tracker.numLeeches)")
+                        Text("\(OrbixStrings.miscSeedsPrefix)：\(tracker.numSeeds) • 下载：\(tracker.numLeeches)")
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.tertiaryLabel)
                         Text(tracker.url)
@@ -566,7 +566,7 @@ struct TorrentDetailView: View {
                 .font(.system(size: 48))
                 .foregroundColor(AppColors.danger)
 
-            Text("加载失败")
+            Text(OrbixStrings.errLoadFailed)
                 .font(.headline)
                 .foregroundColor(AppColors.label)
 
@@ -575,7 +575,7 @@ struct TorrentDetailView: View {
                 .foregroundColor(AppColors.secondaryLabel)
                 .multilineTextAlignment(.center)
 
-            Button("重试") {
+            Button(OrbixStrings.btnRetry) {
                 loadError = nil
                 isLoading = true
                 Task { await manualRefresh() }
@@ -663,7 +663,7 @@ struct TorrentDetailView: View {
         } else {
             await MainActor.run {
                 isLoading = false
-                loadError = "无法加载种子信息"
+                loadError = OrbixStrings.errCantLoadTorrent
             }
             return
         }
@@ -696,7 +696,7 @@ struct TorrentDetailView: View {
             if let t = t {
                 self.torrent = t; loadError = nil
             } else if self.torrent == nil {
-                loadError = "无法加载种子信息"
+                loadError = OrbixStrings.errCantLoadTorrent
             }
             if let p = p { self.properties = p }
             self.files = f; self.trackers = tr; self.peers = pe

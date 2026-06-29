@@ -23,3 +23,9 @@ struct CopyButton: View {
         .buttonStyle(.plain)
     }
 }
+
+#if DEBUG
+#Preview {
+    CopyButton(textToCopy: "abc123def")
+}
+#endif

@@ -10,3 +10,9 @@ struct ScaleButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }
 }
+
+#if DEBUG
+#Preview {
+    Button("Tap") {}.buttonStyle(ScaleButtonStyle())
+}
+#endif

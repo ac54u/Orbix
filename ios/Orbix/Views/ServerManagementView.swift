@@ -19,13 +19,13 @@ struct ServerManagementView: View {
                             .font(.system(size: 48))
                             .foregroundColor(AppColors.placeholder)
 
-                        Text("暂无服务器")
+                        Text(OrbixStrings.msgNoServer)
                             .subtitle()
 
                         Button {
                             showLogin = true
                         } label: {
-                            Text("添加服务器")
+                            Text(OrbixStrings.navAddServer)
                                 .bodyFont(.white)
                                 .padding(.horizontal, 32)
                                 .padding(.vertical, 12)
@@ -47,13 +47,13 @@ struct ServerManagementView: View {
                                     Button(role: .destructive) {
                                         delete(server)
                                     } label: {
-                                        Label("删除", systemImage: "trash")
+                                        Label(OrbixStrings.btnDelete, systemImage: "trash")
                                     }
 
                                     Button {
                                         showLoginWith(server)
                                     } label: {
-                                        Label("编辑", systemImage: "pencil")
+                                        Label(OrbixStrings.btnEdit, systemImage: "pencil")
                                     }
                                     .tint(AppColors.accent)
                                 }
@@ -62,7 +62,7 @@ struct ServerManagementView: View {
                                         onSelected(server)
                                         dismiss()
                                     } label: {
-                                        Label("连接", systemImage: "link")
+                                        Label(OrbixStrings.btnConnect, systemImage: "link")
                                     }
                                     .tint(AppColors.success)
                                 }
@@ -78,11 +78,11 @@ struct ServerManagementView: View {
                     .insetGroupedStyle()
                 }
             }
-            .navigationTitle("服务器管理")
+            .navigationTitle(OrbixStrings.navServerManagement)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("完成") { dismiss() }
+                    Button(OrbixStrings.btnDone) { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -118,6 +118,12 @@ struct ServerManagementView: View {
         showLogin = true
     }
 }
+
+#if DEBUG
+#Preview {
+    ServerManagementView(onSelected: { _ in })
+}
+#endif
 
 private struct ServerRow: View {
     let server: ServerConfig

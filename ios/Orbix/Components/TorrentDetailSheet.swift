@@ -42,7 +42,7 @@ struct TorrentDetailSheet: View {
                                 Divider().background(AppColors.separator)
                                 HStack {
                                     Image(systemName: "doc.text").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
-                                    Text("原文（日文）").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
+                                    Text(OrbixStrings.miscOriginalJP).font(.caption2).foregroundColor(AppColors.tertiaryLabel)
                                 }
                                 Text(raw).subtitle().textSelection(.enabled)
                             }
@@ -55,7 +55,7 @@ struct TorrentDetailSheet: View {
                         VStack(spacing: 4) {
                             HStack {
                                 Image(systemName: "tag").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
-                                Text("番号").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
+                                Text(OrbixStrings.miscCode).font(.caption2).foregroundColor(AppColors.tertiaryLabel)
                                 Spacer()
                             }
                             HStack {
@@ -73,7 +73,7 @@ struct TorrentDetailSheet: View {
                             VStack(spacing: 4) {
                                 HStack {
                                     Image(systemName: "link").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
-                                    Text("页面链接").font(.caption2).foregroundColor(AppColors.tertiaryLabel)
+                                    Text(OrbixStrings.miscPageLink).font(.caption2).foregroundColor(AppColors.tertiaryLabel)
                                     Spacer()
                                 }
                                 HStack {
@@ -93,20 +93,20 @@ struct TorrentDetailSheet: View {
                         Button {
                             Task { _ = try? await QBitApi.shared.addMagnet([torrent.magnet]); dismiss() }
                         } label: {
-                            Label("添加到队列", systemImage: "square.and.arrow.down")
+                            Label(OrbixStrings.btnAddToQueue, systemImage: "square.and.arrow.down")
                                 .bodyFont(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
                                 .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.accent))
                         }
 
                         Button { UIPasteboard.general.string = torrent.magnet } label: {
-                            Label("复制磁力链接", systemImage: "doc.on.doc")
+                            Label(OrbixStrings.btnCopyMagnet, systemImage: "doc.on.doc")
                                 .bodyFont(AppColors.accent).frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(RoundedRectangle(cornerRadius: 14).stroke(AppColors.accent, lineWidth: 1))
                         }
 
                         if let torrentUrl = torrent.torrentUrl {
                             Button { downloadTorrent(torrentUrl) } label: {
-                                Label("下载 .torrent 文件", systemImage: "arrow.down.doc")
+                                Label(OrbixStrings.btnDownloadTorrent, systemImage: "arrow.down.doc")
                                     .bodyFont(AppColors.accent).frame(maxWidth: .infinity).padding(.vertical, 12)
                                     .background(RoundedRectangle(cornerRadius: 14).stroke(AppColors.accent, lineWidth: 1))
                             }
@@ -116,10 +116,10 @@ struct TorrentDetailSheet: View {
                 .padding(16)
             }
             .background(AppColors.groupedBg)
-            .navigationTitle("详情")
+            .navigationTitle(OrbixStrings.navDetails)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(OrbixStrings.btnClose) { dismiss() } }
                 ToolbarItem(placement: .primaryAction) {
                     Button { toggleBookmark() } label: {
                         Image(systemName: bookmarks.contains(torrent.code) ? "heart.fill" : "heart")

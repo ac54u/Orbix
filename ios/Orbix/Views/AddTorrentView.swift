@@ -4,9 +4,16 @@ import UniformTypeIdentifiers
 struct AddTorrentView: View {
     @Environment(\.dismiss) private var dismiss
 
-    enum AddMode: String, CaseIterable {
-        case link = "链接"
-        case file = "文件"
+    enum AddMode: CaseIterable {
+        case link
+        case file
+
+        var displayName: String {
+            switch self {
+            case .link: return OrbixStrings.miscAddModeLink
+            case .file: return OrbixStrings.miscAddModeFile
+            }
+        }
     }
 
     @State private var mode: AddMode = .link
@@ -45,7 +52,7 @@ struct AddTorrentView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle("添加种子")
+            .navigationTitle(OrbixStrings.navAddTorrent)
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showFilePicker) {
                 DocumentPickerView { url in
@@ -63,7 +70,7 @@ struct AddTorrentView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(OrbixStrings.btnCancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: submit) {
@@ -71,7 +78,7 @@ struct AddTorrentView: View {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: AppColors.accent))
                         } else {
-                            Text("添加")
+                            Text(OrbixStrings.btnAdd)
                                 .font(.system(size: 16, weight: .bold))
                         }
                     }
@@ -80,16 +87,16 @@ struct AddTorrentView: View {
             }
             .overlay {
                 if isSubmitting {
-                    ConnectingDialog(message: "添加中...")
+                    ConnectingDialog(message: OrbixStrings.msgAdding)
                 }
             }
         }
     }
 
     private var modePicker: some View {
-        Picker("添加方式", selection: $mode.animation(.spring(response: 0.3, dampingFraction: 0.75))) {
+        Picker(OrbixStrings.sectionAddMethod, selection: $mode.animation(.spring(response: 0.3, dampingFraction: 0.75))) {
             ForEach(AddMode.allCases, id: \.self) { m in
-                Text(m.rawValue).tag(m)
+                Text(m.displayName).tag(m)
             }
         }
         .pickerStyle(.segmented)
@@ -112,7 +119,7 @@ struct AddTorrentView: View {
                     .frame(minHeight: 160)
 
                 if linkText.isEmpty {
-                    Text("输入 magnet 链接或 URL，每行一个")
+                    Text(OrbixStrings.phMagnet)
                         .font(.system(size: 15))
                         .foregroundColor(AppColors.placeholder)
                         .padding(.top, 8)
@@ -130,7 +137,7 @@ struct AddTorrentView: View {
 
     private var fileInputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("种子文件")
+            Text(OrbixStrings.sectionTorrentFile)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppColors.secondaryLabel)
                 .textCase(.uppercase)
@@ -147,7 +154,7 @@ struct AddTorrentView: View {
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppColors.label)
                             .lineLimit(1)
-                        Text("准备上传")
+                        Text(OrbixStrings.msgReadyToUpload)
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.success)
                     }
@@ -184,7 +191,7 @@ struct AddTorrentView: View {
                         Image(systemName: "doc.badge.plus")
                             .font(.system(size: 32))
                             .foregroundColor(AppColors.accent)
-                        Text("点击选择 .torrent 文件")
+                        Text(OrbixStrings.msgClickSelectTorrent)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppColors.label)
                     }
@@ -209,18 +216,18 @@ struct AddTorrentView: View {
 
     private var optionsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("高级选项")
+            Text(OrbixStrings.sectionAdvancedOptions)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppColors.secondaryLabel)
                 .textCase(.uppercase)
                 .padding(.leading, 4)
 
             VStack(spacing: 0) {
-                IconTextFieldRow(icon: "square.grid.2x2.fill", placeholder: "分类", text: $category)
+                IconTextFieldRow(icon: "square.grid.2x2.fill", placeholder: OrbixStrings.phCategoryPlaceholder, text: $category)
                 Divider().padding(.leading, 44)
-                IconTextFieldRow(icon: "tag.fill", placeholder: "标签 (逗号分隔)", text: $tags)
+                IconTextFieldRow(icon: "tag.fill", placeholder: OrbixStrings.phTagsPlaceholder, text: $tags)
                 Divider().padding(.leading, 44)
-                IconTextFieldRow(icon: "folder.fill", placeholder: "保存路径", text: $savePath, disableAutocap: true)
+                IconTextFieldRow(icon: "folder.fill", placeholder: OrbixStrings.phSavePathPlaceholder, text: $savePath, disableAutocap: true)
             }
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -286,6 +293,12 @@ struct AddTorrentView: View {
         showFilePicker = true
     }
 }
+
+#if DEBUG
+#Preview {
+    AddTorrentView()
+}
+#endif
 
 import UIKit
 

@@ -17,7 +17,7 @@ struct ServerSelectionView: View {
 
                 GlowingLogo(size: 88)
 
-                Text("选择服务器")
+                Text(OrbixStrings.serverSelect)
                     .largeTitle()
 
                 if servers.isEmpty {
@@ -26,13 +26,13 @@ struct ServerSelectionView: View {
                             .font(.system(size: 48))
                             .foregroundColor(AppColors.placeholder)
 
-                        Text("还没有添加服务器")
+                        Text(OrbixStrings.serverNotAdded)
                             .subtitle()
 
                         Button {
                             showLogin = true
                         } label: {
-                            Text("添加服务器")
+                            Text(OrbixStrings.navAddServer)
                                 .bodyFont(.white)
                                 .padding(.horizontal, 32)
                                 .padding(.vertical, 12)
@@ -72,7 +72,7 @@ struct ServerSelectionView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "gearshape")
-                            Text("管理服务器")
+                            Text(OrbixStrings.btnManageServers)
                         }
                         .subtitle(AppColors.accent)
                     }
@@ -118,3 +118,9 @@ struct ServerSelectionView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    ServerSelectionView(onConnected: {})
+}
+#endif

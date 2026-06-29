@@ -32,8 +32,14 @@ struct ConnectingDialog: View {
         .onAppear {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 isVisible = true
-            }
-        }
+    }
+}
+
+#if DEBUG
+#Preview {
+    ConnectingDialog(message: OrbixStrings.msgConnecting)
+}
+#endif
     }
 }
 
@@ -55,7 +61,7 @@ struct ConnectingDialogModifier: ViewModifier {
 }
 
 extension View {
-    func connectingDialog(isPresented: Binding<Bool>, message: String = "连接中...") -> some View {
+    func connectingDialog(isPresented: Binding<Bool>, message: String = OrbixStrings.msgConnecting) -> some View {
         modifier(ConnectingDialogModifier(isPresented: isPresented, message: message))
     }
 }

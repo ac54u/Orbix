@@ -27,3 +27,9 @@ struct DetailRow: View {
         .padding(.vertical, 12)
     }
 }
+
+#if DEBUG
+#Preview {
+    DetailRow(icon: "arrow.down", iconColor: .blue, label: "下载速度", value: "10.5 MB/s")
+}
+#endif

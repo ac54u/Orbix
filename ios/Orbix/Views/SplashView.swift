@@ -86,3 +86,9 @@ struct SplashView: View {
         onDecision(.main)
     }
 }
+
+#if DEBUG
+#Preview {
+    SplashView(onDecision: { _ in })
+}
+#endif

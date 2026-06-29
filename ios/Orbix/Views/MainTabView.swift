@@ -17,14 +17,14 @@ struct MainTabView: View {
             TorrentListView()
                 .tabItem {
                     Image(systemName: "square.stack")
-                    Text("种子")
+                    Text(OrbixStrings.tabTorrents)
                 }
                 .tag(0)
 
             StatsView()
                 .tabItem {
                     Image(systemName: "chart.bar")
-                    Text("传输")
+                    Text(OrbixStrings.tabTransfer)
                 }
                 .tag(1)
 
@@ -37,14 +37,14 @@ struct MainTabView: View {
             }
             .tabItem {
                 Image(systemName: searchMode.use141 ? "magnifyingglass.circle.fill" : "magnifyingglass")
-                Text("搜索")
+                Text(OrbixStrings.tabSearch)
             }
             .tag(2)
 
             SettingsView(onLogout: onLogout)
                 .tabItem {
                     Image(systemName: "gearshape")
-                    Text("设置")
+                    Text(OrbixStrings.tabSettings)
                 }
                 .tag(3)
         }
@@ -54,3 +54,9 @@ struct MainTabView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    MainTabView(initialTab: nil, onLogout: {})
+}
+#endif

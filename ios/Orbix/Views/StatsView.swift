@@ -23,29 +23,29 @@ struct StatsView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                        Text("当前总速度").sectionHeader()
+                        Text(OrbixStrings.statsCurrSpeed).sectionHeader()
                             .frame(maxWidth: .infinity, alignment: .leading)
                         heroSpeedCard
 
                         if transfer?.serverState != nil {
-                            Text("传输量").sectionHeader()
+                            Text(OrbixStrings.statsVolume).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         transferVolumeCard
 
                         if transfer?.serverState != nil {
-                            Text("连接").sectionHeader()
+                            Text(OrbixStrings.statsConnection).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         connectionCard
 
                         if transfer?.serverState != nil {
-                            Text("磁盘").sectionHeader()
+                            Text(OrbixStrings.statsDisk).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         diskCard
 
-                            Text("概览").sectionHeader()
+                            Text(OrbixStrings.statsOverview).sectionHeader()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             overviewCard
 
@@ -56,7 +56,7 @@ struct StatsView: View {
                     }
                 }
             }
-            .navigationTitle("传输统计")
+            .navigationTitle(OrbixStrings.navTransferStats)
             .onAppear { refresh() }
             .onReceive(timer) { _ in refresh() }
         }
@@ -112,17 +112,17 @@ struct StatsView: View {
     private var transferVolumeCard: some View {
         if let state = transfer?.serverState {
             VStack(spacing: 0) {
-                statRow("会话下载", value: formatBytes(transfer?.dlInfoData ?? 0))
+                statRow(OrbixStrings.statsSessionDL, value: formatBytes(transfer?.dlInfoData ?? 0))
                 Divider().background(AppColors.separator)
-                statRow("会话上传", value: formatBytes(transfer?.upInfoData ?? 0))
+                statRow(OrbixStrings.statsSessionUL, value: formatBytes(transfer?.upInfoData ?? 0))
                 Divider().background(AppColors.separator)
-                statRow("总计下载", value: formatBytes(state.alltimeDl))
+                statRow(OrbixStrings.statsTotalDL, value: formatBytes(state.alltimeDl))
                 Divider().background(AppColors.separator)
-                statRow("总计上传", value: formatBytes(state.alltimeUl))
+                statRow(OrbixStrings.statsTotalUL, value: formatBytes(state.alltimeUl))
                 Divider().background(AppColors.separator)
-                statRow("全局分享率", value: state.globalRatio ?? "-")
+                statRow(OrbixStrings.statsGlobalRatio, value: state.globalRatio ?? "-")
                 Divider().background(AppColors.separator)
-                statRow("浪费", value: formatBytes(state.totalWastedSession))
+                statRow(OrbixStrings.statsWasted, value: formatBytes(state.totalWastedSession))
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -140,7 +140,7 @@ struct StatsView: View {
             VStack(spacing: 0) {
                 connectionStatusRow(status: state.connectionStatus)
                 Divider().background(AppColors.separator)
-                statRow("DHT 节点", value: "\(state.dhtNodes)")
+                statRow(OrbixStrings.statsDHT, value: "\(state.dhtNodes)")
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -156,7 +156,7 @@ struct StatsView: View {
     private var diskCard: some View {
         if let state = transfer?.serverState {
             VStack(spacing: 0) {
-                statRow("可用空间", value: formatBytes(state.freeSpaceOnDisk))
+                statRow(OrbixStrings.statsFreeSpace, value: formatBytes(state.freeSpaceOnDisk))
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -176,17 +176,17 @@ struct StatsView: View {
         let errored = torrents.filter { $0.statusBadge.isError }.count
 
         return VStack(spacing: 0) {
-            overviewRow("square.stack", "总计", torrents.count, AppColors.label)
+            overviewRow("square.stack", OrbixStrings.statsTotal, torrents.count, AppColors.label)
             Divider().background(AppColors.separator)
-            overviewRow("arrow.down.circle", "下载中", dl, AppColors.accent)
+            overviewRow("arrow.down.circle", OrbixStrings.statsDownloading, dl, AppColors.accent)
             Divider().background(AppColors.separator)
-            overviewRow("arrow.up.circle", "做种中", up, AppColors.success)
+            overviewRow("arrow.up.circle", OrbixStrings.statsSeeding, up, AppColors.success)
             Divider().background(AppColors.separator)
-            overviewRow("pause.circle", "已暂停", paused, AppColors.tertiaryLabel)
+            overviewRow("pause.circle", OrbixStrings.statsPaused, paused, AppColors.tertiaryLabel)
             Divider().background(AppColors.separator)
-            overviewRow("arrow.triangle.2.circlepath", "检查中", checking, AppColors.warning)
+            overviewRow("arrow.triangle.2.circlepath", OrbixStrings.statsChecking, checking, AppColors.warning)
             Divider().background(AppColors.separator)
-            overviewRow("exclamationmark.circle", "错误", errored, AppColors.danger)
+            overviewRow("exclamationmark.circle", OrbixStrings.statsError, errored, AppColors.danger)
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
@@ -212,7 +212,7 @@ struct StatsView: View {
 
     private func connectionStatusRow(status: String) -> some View {
         HStack {
-            Text("状态")
+            Text(OrbixStrings.statsStatus)
                 .font(.system(size: 14))
                 .foregroundColor(AppColors.secondaryLabel)
             Spacer()
@@ -277,3 +277,9 @@ struct StatsView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    StatsView()
+}
+#endif

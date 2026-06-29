@@ -12,3 +12,9 @@ struct SectionHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#if DEBUG
+#Preview {
+    SectionHeader(title: "示例标题")
+}
+#endif

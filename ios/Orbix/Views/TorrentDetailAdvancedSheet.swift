@@ -13,10 +13,10 @@ struct TorrentDetailAdvancedSheet: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("修改保存路径")
+                        Text(OrbixStrings.miscModifyPath)
                             .font(.system(size: 13))
                             .foregroundColor(AppColors.secondaryLabel)
-                        TextField("输入新的保存路径", text: $newLocation)
+                        TextField(OrbixStrings.phNewSavePath, text: $newLocation)
                             .font(.system(size: 14, design: .monospaced))
                             .foregroundColor(AppColors.label)
                     }
@@ -30,7 +30,7 @@ struct TorrentDetailAdvancedSheet: View {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                         }
                     } label: {
-                        Text("应用路径")
+                        Text(OrbixStrings.btnApplyPath)
                             .font(.system(size: 14, weight: .medium))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
@@ -42,11 +42,11 @@ struct TorrentDetailAdvancedSheet: View {
                     }
                     .disabled(newLocation.isEmpty)
                 } header: {
-                    Text("位置")
+                    Text(OrbixStrings.sectionLocation)
                 }
 
                 Section {
-                    TextField("重命名", text: $newName)
+                    TextField(OrbixStrings.phRename, text: $newName)
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.label)
 
@@ -57,7 +57,7 @@ struct TorrentDetailAdvancedSheet: View {
                             dismiss()
                         }
                     } label: {
-                        Text("应用名称")
+                        Text(OrbixStrings.btnApplyName)
                             .font(.system(size: 14, weight: .medium))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
@@ -69,15 +69,15 @@ struct TorrentDetailAdvancedSheet: View {
                     }
                     .disabled(newName.isEmpty)
                 } header: {
-                    Text("重命名")
+                    Text(OrbixStrings.sectionRename)
                 }
 
                 Section {
                     HStack {
-                        Text("下载限速")
+                        Text(OrbixStrings.labelDownloadLimit)
                             .foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("不限速", text: $dlLimitStr)
+                        TextField(OrbixStrings.phUnlimited, text: $dlLimitStr)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .foregroundColor(AppColors.label)
@@ -87,10 +87,10 @@ struct TorrentDetailAdvancedSheet: View {
                     }
 
                     HStack {
-                        Text("上传限速")
+                        Text(OrbixStrings.labelUploadLimit)
                             .foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("不限速", text: $ulLimitStr)
+                        TextField(OrbixStrings.phUnlimited, text: $ulLimitStr)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .foregroundColor(AppColors.label)
@@ -112,7 +112,7 @@ struct TorrentDetailAdvancedSheet: View {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                         }
                     } label: {
-                        Text("应用限速")
+                        Text(OrbixStrings.btnApplyLimit)
                             .font(.system(size: 14, weight: .medium))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
@@ -123,9 +123,9 @@ struct TorrentDetailAdvancedSheet: View {
                             .foregroundColor(.white)
                     }
                 } header: {
-                    Text("速度限制")
+                    Text(OrbixStrings.sectionSpeedLimit)
                 } footer: {
-                    Text("留空或填 0 表示不限速")
+                    Text(OrbixStrings.infoEmptyZeroHint)
                 }
 
                 Section {
@@ -138,7 +138,7 @@ struct TorrentDetailAdvancedSheet: View {
                         }
                     } label: {
                         HStack {
-                            Label("切换顺序下载", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+                            Label(OrbixStrings.btnToggleSequential, systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
                                 .foregroundColor(AppColors.label)
                             Spacer()
                             Image(systemName: "chevron.forward")
@@ -147,19 +147,19 @@ struct TorrentDetailAdvancedSheet: View {
                         }
                     }
                 } header: {
-                    Text("下载模式")
+                    Text(OrbixStrings.sectionDownloadMode)
                 } footer: {
-                    Text("按文件顺序下载，适合预览媒体文件")
+                    Text(OrbixStrings.infoSequentialHint)
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg)
-            .navigationTitle("高级控制")
+            .navigationTitle(OrbixStrings.navAdvancedControl)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(OrbixStrings.btnDone) { dismiss() }
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.accent)
                 }
@@ -167,3 +167,16 @@ struct TorrentDetailAdvancedSheet: View {
         }
     }
 }
+
+#if DEBUG
+struct AdvancedSheetPreview: View {
+    @State private var loc = "/downloads"
+    @State private var name = "test"
+    @State private var dl = ""
+    @State private var ul = ""
+    var body: some View {
+        TorrentDetailAdvancedSheet(hash: "abc", newLocation: $loc, newName: $name, dlLimitStr: $dl, ulLimitStr: $ul)
+    }
+}
+#Preview { AdvancedSheetPreview() }
+#endif

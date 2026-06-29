@@ -45,14 +45,14 @@ struct QBitRadarrAddSheet: View {
                     VStack(spacing: 0) {
                         if qualityProfiles.isEmpty {
                             HStack {
-                                Text("质量配置").font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
+                                Text(OrbixStrings.sectionQualityConfig).font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
                                 Spacer()
                                 ProgressView().controlSize(.mini)
                             }
                             .padding(.horizontal, 16).padding(.vertical, 10)
                         } else {
                             HStack {
-                                Text("质量配置").font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
+                                Text(OrbixStrings.sectionQualityConfig).font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
                                 Spacer()
                                 Picker("", selection: $selectedQualityId) {
                                     ForEach(qualityProfiles) { p in
@@ -67,14 +67,14 @@ struct QBitRadarrAddSheet: View {
 
                         if rootFolders.isEmpty {
                             HStack {
-                                Text("存储路径").font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
+                                Text(OrbixStrings.sectionStoragePath).font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
                                 Spacer()
                                 ProgressView().controlSize(.mini)
                             }
                             .padding(.horizontal, 16).padding(.vertical, 10)
                         } else {
                             HStack {
-                                Text("存储路径").font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
+                                Text(OrbixStrings.sectionStoragePath).font(.system(size: 14)).foregroundColor(AppColors.secondaryLabel)
                                 Spacer()
                                 Picker("", selection: $selectedRootPath) {
                                     ForEach(rootFolders) { f in
@@ -97,7 +97,7 @@ struct QBitRadarrAddSheet: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "plus.circle.fill")
-                            Text("添加并自动搜刮")
+                            Text(OrbixStrings.btnAddAndSearch)
                         }
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
@@ -110,7 +110,7 @@ struct QBitRadarrAddSheet: View {
                     }
                     .padding(.top, 4)
 
-                    Text("电影添加到库后将自动搜索并开始下载")
+                    Text(OrbixStrings.infoRadarrHint)
                         .font(.system(size: 12))
                         .foregroundColor(AppColors.tertiaryLabel)
                         .multilineTextAlignment(.center)
@@ -118,11 +118,11 @@ struct QBitRadarrAddSheet: View {
                 .padding(16)
             }
             .background(AppColors.mainBg)
-            .navigationTitle("添加到 Radarr")
+            .navigationTitle(OrbixStrings.navAddToRadarr)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") { dismiss() }
+                    Button(OrbixStrings.btnCancel) { dismiss() }
                         .foregroundColor(AppColors.secondaryLabel)
                 }
             }
@@ -164,3 +164,19 @@ struct QBitRadarrAddSheet: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    QBitRadarrAddSheet(
+        item: SearchResult(num: 12345, descr: "Test Movie", fileName: "Test.Movie.2024.1080p.mkv", fileSize: 2_147_483_648, nbLeechers: 5, nbSeeders: 100, siteUrl: "https://example.com/poster.jpg"),
+        qualityProfiles: [
+            RadarrApi.QualityProfile(id: 1, name: "HD - 1080p"),
+            RadarrApi.QualityProfile(id: 2, name: "4K")
+        ],
+        rootFolders: [
+            RadarrApi.RootFolder(id: 1, path: "/movies"),
+            RadarrApi.RootFolder(id: 2, path: "/data/media")
+        ]
+    )
+}
+#endif

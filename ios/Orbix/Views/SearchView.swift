@@ -52,11 +52,11 @@ struct SearchView: View {
                 case .idle: idleView
                 case .loading: loadingView
                 case .results: resultsView
-                case .empty: emptyHint("未找到结果", icon: "magnifyingglass")
+                case .empty: emptyHint(OrbixStrings.errNoSearchResults, icon: "magnifyingglass")
                 case .error(let m): emptyHint(m, icon: "exclamationmark.triangle", isError: true)
                 }
             }
-            .navigationTitle("搜索")
+            .navigationTitle(OrbixStrings.navSearch)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -96,12 +96,12 @@ struct SearchView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "flame.fill").foregroundColor(AppColors.warning)
-                    Text("浏览热门").sectionHeader()
+                    Text(OrbixStrings.msgBrowseHot).sectionHeader()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
-                Text("搜索番号或名称")
+                Text(OrbixStrings.msgSearchSuggestion)
                     .subtitle(AppColors.tertiaryLabel)
                     .padding(.horizontal, 20)
 
@@ -127,7 +127,7 @@ struct SearchView: View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 ProgressView().tint(AppColors.accent)
-                Text("正在获取最新资源...").subtitle(AppColors.tertiaryLabel)
+                Text(OrbixStrings.msgFetchingLatest).subtitle(AppColors.tertiaryLabel)
             }
             .padding(.top, 16)
             gridSkeleton
@@ -157,7 +157,7 @@ struct SearchView: View {
                     Image(systemName: "heart.slash")
                         .font(.system(size: 40))
                         .foregroundColor(AppColors.placeholder)
-                    Text("没有收藏的种子")
+                    Text(OrbixStrings.msgNoBookmarked)
                         .foregroundColor(AppColors.secondaryLabel)
                 }
                 .frame(maxWidth: .infinity)
@@ -200,7 +200,7 @@ struct SearchView: View {
                                 .frame(height: 1)
                                 .onAppear { loadMore() }
                         } else {
-                            Text("— 已加载全部 —")
+                            Text(OrbixStrings.msgAllLoaded)
                                 .font(.caption)
                                 .foregroundColor(AppColors.tertiaryLabel)
                         }
@@ -217,12 +217,12 @@ struct SearchView: View {
     // MARK: - Context Menu
     private func cardContextMenu(_ torrent: ScrapedTorrent) -> some View {
         Group {
-            Button { addMagnet(torrent) } label: { Label("添加到队列", systemImage: "square.and.arrow.down") }
+            Button { addMagnet(torrent) } label: { Label(OrbixStrings.btnAddToQueue, systemImage: "square.and.arrow.down") }
             Button { toggleBookmark(torrent) } label: {
-                Label(bookmarks.contains(torrent.code) ? "取消收藏" : "收藏",
+                Label(bookmarks.contains(torrent.code) ? OrbixStrings.miscUnbookmark : OrbixStrings.miscBookmark,
                       systemImage: bookmarks.contains(torrent.code) ? "heart.fill" : "heart")
             }
-            Button { UIPasteboard.general.string = torrent.magnet } label: { Label("复制 Magnet", systemImage: "doc.on.doc") }
+            Button { UIPasteboard.general.string = torrent.magnet } label: { Label(OrbixStrings.btnCopyMagnet, systemImage: "doc.on.doc") }
         }
     }
 
@@ -377,6 +377,12 @@ struct SearchView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    SearchView()
+}
+#endif
 
 
 

@@ -137,23 +137,23 @@ enum TorrentStatus: String {
 
     var displayName: String {
         switch self {
-        case .downloading: "下载中"
-        case .uploading: "做种中"
-        case .stalledDL: "等待下载"
-        case .stalledUP: "做种中 (等待)"
-        case .pausedDL, .stoppedDL: "已暂停"
-        case .pausedUP, .stoppedUP: "已完成"
-        case .queuedDL: "排队下载"
-        case .queuedUP: "排队做种"
-        case .checkingDL, .checkingUP, .checkingResumeData: "校验中"
-        case .moving: "移动中"
-        case .forcedUP: "强制做种"
-        case .forcedDL: "强制下载"
-        case .allocating: "分配空间"
-        case .error: "错误"
-        case .missingFiles: "文件丢失"
-        case .metaDL: "获取元数据"
-        case .unknown: "未知"
+        case .downloading: OrbixStrings.statsDownloading
+        case .uploading: OrbixStrings.statsSeeding
+        case .stalledDL: String(localized: "等待下载", comment: "Waiting to download")
+        case .stalledUP: String(localized: "做种中 (等待)", comment: "Seeding (waiting)")
+        case .pausedDL, .stoppedDL: OrbixStrings.statsPaused
+        case .pausedUP, .stoppedUP: String(localized: "已完成", comment: "Completed")
+        case .queuedDL: String(localized: "排队下载", comment: "Queued download")
+        case .queuedUP: String(localized: "排队做种", comment: "Queued upload")
+        case .checkingDL, .checkingUP, .checkingResumeData: String(localized: "校验中", comment: "Checking")
+        case .moving: String(localized: "移动中", comment: "Moving")
+        case .forcedUP: String(localized: "强制做种", comment: "Forced upload")
+        case .forcedDL: String(localized: "强制下载", comment: "Forced download")
+        case .allocating: String(localized: "分配空间", comment: "Allocating space")
+        case .error: OrbixStrings.statsError
+        case .missingFiles: String(localized: "文件丢失", comment: "Missing files")
+        case .metaDL: String(localized: "获取元数据", comment: "Fetching metadata")
+        case .unknown: String(localized: "未知", comment: "Unknown")
         }
     }
 }
@@ -295,12 +295,12 @@ struct TorrentTracker: Codable, Identifiable {
 
     var statusText: String {
         switch status {
-        case 0: return "已禁用"
-        case 1: return "未联系"
-        case 2: return "工作中"
-        case 3: return "更新中"
-        case 4: return "工作中"
-        default: return msg.isEmpty ? "未知" : msg
+        case 0: return String(localized: "已禁用", comment: "Disabled")
+        case 1: return String(localized: "未联系", comment: "Not contacted")
+        case 2: return String(localized: "工作中", comment: "Working")
+        case 3: return String(localized: "更新中", comment: "Updating")
+        case 4: return String(localized: "工作中", comment: "Working")
+        default: return msg.isEmpty ? String(localized: "未知", comment: "Unknown") : msg
         }
     }
 }

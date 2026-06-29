@@ -14,13 +14,13 @@ struct TorrentListView: View {
     @State private var sortOrder: TorrentSort = .dateAdded
 
     enum TorrentSort: String, CaseIterable {
-        case dateAdded = "添加时间"
-        case name = "名称"
-        case progress = "进度"
-        case size = "大小"
-        case ratio = "分享率"
-        case dlSpeed = "下载速度"
-        case upSpeed = "上传速度"
+        case dateAdded = OrbixStrings.sortDateAdded
+        case name = OrbixStrings.sortName
+        case progress = OrbixStrings.sortProgress
+        case size = OrbixStrings.sortSize
+        case ratio = OrbixStrings.sortRatio
+        case dlSpeed = OrbixStrings.sortDLSpeed
+        case upSpeed = OrbixStrings.sortULSpeed
 
         var icon: String {
             switch self {
@@ -36,12 +36,12 @@ struct TorrentListView: View {
     }
 
     enum TorrentFilter: String, CaseIterable {
-        case all = "全部"
-        case downloading = "下载中"
-        case seeding = "做种中"
-        case active = "活动中"
-        case paused = "已暂停"
-        case completed = "已完成"
+        case all = OrbixStrings.filterAll
+        case downloading = OrbixStrings.statsDownloading
+        case seeding = OrbixStrings.statsSeeding
+        case active = OrbixStrings.filterActive
+        case paused = OrbixStrings.statsPaused
+        case completed = OrbixStrings.filterCompleted
     }
 
     private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
@@ -65,7 +65,7 @@ struct TorrentListView: View {
                         Image(systemName: "square.stack")
                             .font(.system(size: 48))
                             .foregroundColor(AppColors.placeholder)
-                        Text(filter == .all ? "暂无种子" : "没有匹配的种子")
+                        Text(filter == .all ? OrbixStrings.msgNoTorrents : OrbixStrings.msgNoMatchingTorrents)
                             .foregroundColor(AppColors.secondaryLabel)
                     }
                 } else {
@@ -97,7 +97,7 @@ struct TorrentListView: View {
                 }
             }
             .animation(.interpolatingSpring(stiffness: 300, damping: 25), value: globalDlSpeed > 0 || globalUpSpeed > 0)
-            .navigationTitle("种子")
+            .navigationTitle(OrbixStrings.tabTorrents)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -265,7 +265,7 @@ struct TorrentListView: View {
             List {
                 Section {
                     HStack {
-                        Label("备用限速模式", systemImage: "tortoise")
+                        Label(OrbixStrings.labelAltSpeedMode, systemImage: "tortoise")
                             .foregroundColor(AppColors.label)
                         Spacer()
                         Toggle("", isOn: $altSpeedEnabled)
@@ -279,23 +279,23 @@ struct TorrentListView: View {
                             }
                     }
                 } header: {
-                    Text("模式")
+                    Text(OrbixStrings.sectionMode)
                 } footer: {
-                    Text("开启后使用备用限速方案")
+                    Text(OrbixStrings.infoAltSpeedHint)
                 }
 
                 Section {
                     HStack {
-                        Text("下载限速").foregroundColor(AppColors.secondaryLabel)
+                        Text(OrbixStrings.labelDownloadLimit).foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("不限", text: $gDlLimitStr)
+                        TextField(OrbixStrings.phNoLimit, text: $gDlLimitStr)
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing)
                         Text("KB/s").font(.system(size: 12)).foregroundColor(AppColors.tertiaryLabel)
                     }
                     HStack {
-                        Text("上传限速").foregroundColor(AppColors.secondaryLabel)
+                        Text(OrbixStrings.labelUploadLimit).foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("不限", text: $gUlLimitStr)
+                        TextField(OrbixStrings.phNoLimit, text: $gUlLimitStr)
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing)
                         Text("KB/s").font(.system(size: 12)).foregroundColor(AppColors.tertiaryLabel)
                     }
@@ -309,30 +309,36 @@ struct TorrentListView: View {
                             UINotificationFeedbackGenerator().notificationOccurred(.success)
                         }
                     } label: {
-                        Text("应用限速")
+                        Text(OrbixStrings.btnApplyLimit)
                             .font(.system(size: 14, weight: .medium))
                             .frame(maxWidth: .infinity).padding(.vertical, 8)
                             .background(RoundedRectangle(cornerRadius: 8).fill(AppColors.accent))
                             .foregroundColor(.white)
                     }
                 } header: {
-                    Text("全局速度限制")
+                    Text(OrbixStrings.sectionGlobalSpeedLimit)
                 } footer: {
-                    Text("空或 0 表示不限制")
+                    Text(OrbixStrings.infoEmptyZeroGlobalHint)
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppColors.mainBg)
-            .navigationTitle("全局控制")
+            .navigationTitle(OrbixStrings.navGlobalControl)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { showSpeedPanel = false }
+                    Button(OrbixStrings.btnDone) { showSpeedPanel = false }
                         .fontWeight(.medium).foregroundColor(AppColors.accent)
                 }
             }
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    TorrentListView()
+}
+#endif
 

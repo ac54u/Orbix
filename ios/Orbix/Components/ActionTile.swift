@@ -42,3 +42,9 @@ struct ActionTile: View {
         .disabled(isLoading)
     }
 }
+
+#if DEBUG
+#Preview {
+    ActionTile(icon: "play.fill", label: "启动", color: .green, isLoading: false, action: {})
+}
+#endif

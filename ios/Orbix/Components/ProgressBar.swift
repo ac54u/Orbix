@@ -22,6 +22,12 @@ struct ProgressBar: View {
     }
 }
 
+#if DEBUG
+#Preview {
+    ProgressBar(progress: 0.65)
+}
+#endif
+
 func formatSpeed(_ speed: Int64) -> String {
     let kb: Int64 = 1024
     let mb = kb * 1024

@@ -45,6 +45,12 @@ struct ToastView: View {
     }
 }
 
+#if DEBUG
+#Preview {
+    ToastView(type: .success, message: "操作完成")
+}
+#endif
+
 @MainActor
 final class ToastManager: ObservableObject {
     static let shared = ToastManager()

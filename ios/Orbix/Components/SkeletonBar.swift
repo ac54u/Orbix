@@ -19,3 +19,9 @@ struct SkeletonBar: View {
             .onAppear { isAnimating = true }
     }
 }
+
+#if DEBUG
+#Preview {
+    SkeletonBar(height: 60)
+}
+#endif

@@ -18,7 +18,7 @@ struct QBitResultCard: View {
                     .foregroundColor(item.isAdded ? AppColors.secondaryLabel : AppColors.label)
                     .lineLimit(2)
                 if item.isAdded {
-                    Text("已在库中")
+                    Text(OrbixStrings.miscInLibrary)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(AppColors.success)
                         .padding(.horizontal, 6)

@@ -46,7 +46,7 @@ struct AddServiceView: View {
         NavigationStack {
             List {
                 Section {
-                    Picker("服务类型", selection: $kind) {
+                    Picker(OrbixStrings.sectionServiceType, selection: $kind) {
                         ForEach(ServiceKind.allCases, id: \.self) { k in
                             HStack(spacing: 6) {
                                 Image(systemName: k.icon)
@@ -62,15 +62,15 @@ struct AddServiceView: View {
 
                 Section {
                     HStack {
-                        Text("名称").foregroundColor(AppColors.secondaryLabel)
+                        Text(OrbixStrings.sectionName).foregroundColor(AppColors.secondaryLabel)
                         Spacer()
-                        TextField("可选", text: $name)
+                        TextField(OrbixStrings.phOptional, text: $name)
                             .multilineTextAlignment(.trailing)
                             .foregroundColor(AppColors.label)
                     }
 
                     HStack {
-                        Text("主机").foregroundColor(AppColors.secondaryLabel)
+                        Text(OrbixStrings.sectionHost).foregroundColor(AppColors.secondaryLabel)
                         Spacer()
                         TextField("192.168.1.100", text: $host)
                             .multilineTextAlignment(.trailing)
@@ -80,7 +80,7 @@ struct AddServiceView: View {
                     }
 
                     HStack {
-                        Text("端口").foregroundColor(AppColors.secondaryLabel)
+                        Text(OrbixStrings.miscPort).foregroundColor(AppColors.secondaryLabel)
                         Spacer()
                         TextField(defaultPort, text: $port)
                             .multilineTextAlignment(.trailing)
@@ -93,13 +93,13 @@ struct AddServiceView: View {
                     }
                     .tint(AppColors.accent)
                 } header: {
-                    Text("连接")
+                    Text(OrbixStrings.sectionConnection)
                 }
 
                 if kind == .qBittorrent {
                     Section {
                         HStack {
-                            Text("用户名").foregroundColor(AppColors.secondaryLabel)
+                            Text(OrbixStrings.miscUsername).foregroundColor(AppColors.secondaryLabel)
                             Spacer()
                             TextField("admin", text: $username)
                                 .multilineTextAlignment(.trailing)
@@ -107,7 +107,7 @@ struct AddServiceView: View {
                                 .foregroundColor(AppColors.label)
                         }
                         HStack {
-                            Text("密码").foregroundColor(AppColors.secondaryLabel)
+                            Text(OrbixStrings.miscPassword).foregroundColor(AppColors.secondaryLabel)
                             Spacer()
                             Group {
                                 if showPassword {
@@ -127,7 +127,7 @@ struct AddServiceView: View {
                             }
                         }
                     } header: {
-                        Text("认证")
+                        Text(OrbixStrings.sectionAuth)
                     }
                 } else {
                     Section {
@@ -152,9 +152,9 @@ struct AddServiceView: View {
                             }
                         }
                     } header: {
-                        Text("认证")
+                        Text(OrbixStrings.sectionAuth)
                     } footer: {
-                        Text("在 \(kind.rawValue) 设置 → General 中找到 API Key")
+                        Text(String(format: OrbixStrings.infoAPIKeyHint, kind.rawValue))
                     }
                 }
             }
@@ -162,11 +162,11 @@ struct AddServiceView: View {
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .background(AppColors.mainBg)
-            .navigationTitle(existing != nil ? "编辑服务" : "添加服务")
+            .navigationTitle(existing != nil ? OrbixStrings.navEditService : OrbixStrings.navAddService)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") { dismiss() }
+                    Button(OrbixStrings.btnCancel) { dismiss() }
                         .foregroundColor(AppColors.secondaryLabel)
                         .disabled(isTesting)
                 }
@@ -174,15 +174,15 @@ struct AddServiceView: View {
                     if isTesting {
                         ProgressView().tint(AppColors.accent)
                     } else {
-                        Button("连接") { Task { await testAndSave() } }
+                        Button(OrbixStrings.btnConnect) { Task { await testAndSave() } }
                             .fontWeight(.bold)
                             .foregroundColor(host.isEmpty ? AppColors.secondaryLabel : AppColors.accent)
                             .disabled(host.isEmpty)
                     }
                 }
             }
-            .alert("连接测试", isPresented: $showAlert) {
-                Button("确定", role: .cancel) {}
+            .alert(OrbixStrings.msgConnTest, isPresented: $showAlert) {
+                Button(OrbixStrings.btnOK, role: .cancel) {}
             } message: {
                 Text(alertMessage)
             }
@@ -233,3 +233,9 @@ struct AddServiceView: View {
         onSave(cred)
                 }
             }
+
+#if DEBUG
+#Preview {
+    AddServiceView(onSave: { _ in })
+}
+#endif
