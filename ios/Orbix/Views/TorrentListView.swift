@@ -99,50 +99,45 @@ struct TorrentListView: View {
                     }
                 } else {
                     List {
-                        Section {
-                            ForEach(filteredTorrents) { torrent in
-                                HStack(spacing: 0) {
-                                    if isEditMode {
-                                        selectionIcon(for: torrent)
-                                            .padding(.trailing, AppSpacing.md)
-                                    }
+                        ForEach(filteredTorrents) { torrent in
+                            HStack(spacing: 0) {
+                                if isEditMode {
+                                    selectionIcon(for: torrent)
+                                        .padding(.trailing, AppSpacing.md)
+                                }
 
-                                    TorrentRow(torrent: torrent)
-                                }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        executeSingleAction(.deleteFiles, torrent)
-                                    } label: {
-                                        Label(OrbixStrings.btnDelete, systemImage: "trash")
-                                    }
-                                }
-                                .swipeActions(edge: .leading) {
-                                    Button {
-                                        executeSingleAction(torrent.statusBadge.isPaused ? .start : .stop, torrent)
-                                    } label: {
-                                        Label(
-                                            torrent.statusBadge.isPaused ? OrbixStrings.btnStart : OrbixStrings.btnPause,
-                                            systemImage: torrent.statusBadge.isPaused ? "play.fill" : "pause.fill"
-                                        )
-                                    }
-                                    .tint(torrent.statusBadge.isPaused ? AppColors.success : AppColors.warning)
-                                }
-                                .contextMenu { contextMenuItems(for: torrent) }
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    if isEditMode {
-                                        toggleSelection(torrent.hash)
-                                    } else {
-                                        selectedHash = torrent.hash
-                                    }
+                                TorrentRow(torrent: torrent)
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    executeSingleAction(.deleteFiles, torrent)
+                                } label: {
+                                    Label(OrbixStrings.btnDelete, systemImage: "trash")
                                 }
                             }
-                        } header: {
-                            filterBar
-                                .listRowInsets(EdgeInsets())
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    executeSingleAction(torrent.statusBadge.isPaused ? .start : .stop, torrent)
+                                } label: {
+                                    Label(
+                                        torrent.statusBadge.isPaused ? OrbixStrings.btnStart : OrbixStrings.btnPause,
+                                        systemImage: torrent.statusBadge.isPaused ? "play.fill" : "pause.fill"
+                                    )
+                                }
+                                .tint(torrent.statusBadge.isPaused ? AppColors.success : AppColors.warning)
+                            }
+                            .contextMenu { contextMenuItems(for: torrent) }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if isEditMode {
+                                    toggleSelection(torrent.hash)
+                                } else {
+                                    selectedHash = torrent.hash
+                                }
+                            }
                         }
                     }
                     .listStyle(.plain)
@@ -222,8 +217,11 @@ struct TorrentListView: View {
                                         Text(sort.displayName)
                                         if sortOrder == sort {
                                             Image(systemName: "checkmark")
-                                        }
-                                    }
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                filterBar
+            }
+        }
                                 }
                             }
                         } label: {
