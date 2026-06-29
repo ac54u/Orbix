@@ -59,14 +59,14 @@ final class AppLockService: ObservableObject {
         enteredBackgroundAt = nil
     }
 
-    func authenticate(reason: String = "解锁 Orbix") {
+    func authenticate(reason: String = OrbixStrings.lockUnlockReason) {
         guard isEnabled else {
             isLocked = false
             return
         }
 
         let context = LAContext()
-        context.localizedFallbackTitle = "输入密码"
+        context.localizedFallbackTitle = OrbixStrings.lockFallbackTitle
 
         Task { @MainActor in
             do {
@@ -127,7 +127,7 @@ private struct LockScreen: View {
                 Text("Orbix")
                     .largeTitle()
 
-                Text("已锁定")
+                Text(OrbixStrings.lockLocked)
                     .subtitle()
 
                 Button {

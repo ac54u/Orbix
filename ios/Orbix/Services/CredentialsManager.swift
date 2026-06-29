@@ -125,10 +125,10 @@ final class CredentialsManager: ObservableObject {
 
         var message: String {
             switch self {
-            case .ok: return "连接成功"
-            case .invalidHost: return "无法连接到服务器，请检查地址和端口"
-            case .authFailed: return "认证失败，请检查 API Key 或用户名密码"
-            case .timeout: return "连接超时，请检查网络或防火墙"
+            case .ok: return OrbixStrings.connSuccess
+            case .invalidHost: return OrbixStrings.connInvalidHost
+            case .authFailed: return OrbixStrings.connAuthFailed
+            case .timeout: return OrbixStrings.connTimeout
             case .unknown(let m): return m
             }
         }
@@ -179,13 +179,13 @@ final class CredentialsManager: ObservableObject {
 
         do {
             let (_, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse else { return .unknown("无效响应") }
+            guard let http = response as? HTTPURLResponse else { return .unknown(OrbixStrings.connUnknown) }
             if http.statusCode == 200 { return .ok }
             if http.statusCode == 401 { return .authFailed }
-            return .unknown("服务器返回 \(http.statusCode)：\(endpoint)")
+            return .unknown(String(format: OrbixStrings.connServerReturn, http.statusCode, endpoint))
         } catch let err as URLError {
             if err.code == .timedOut { return .timeout }
-            return .unknown("无法连接 \(endpoint)\n\(err.localizedDescription)")
+            return .unknown(String(format: OrbixStrings.connUnableConnect, endpoint, err.localizedDescription))
         } catch {
             return .unknown(error.localizedDescription)
         }

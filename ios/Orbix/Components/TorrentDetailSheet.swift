@@ -165,8 +165,15 @@ struct TorrentDetailSheet: View {
 }
 
 #if DEBUG
+struct TorrentDetailSheetPreview: View {
+    @State private var bookmarks: Set<String> = []
+
+    var body: some View {
+        TorrentDetailSheet(torrent: .demo(), bookmarks: $bookmarks, onChanged: {})
+    }
+}
+
 #Preview {
-    @Previewable @State var bookmarks: Set<String> = []
-    TorrentDetailSheet(torrent: .demo(), bookmarks: $bookmarks, onChanged: {})
+    TorrentDetailSheetPreview()
 }
 #endif

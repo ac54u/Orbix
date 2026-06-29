@@ -6,14 +6,6 @@ extension View {
             .scrollContentBackground(.hidden)
             .background(AppColors.groupedBg)
     }
-
-    func cardBackground() -> some View {
-        self.background(AppColors.card)
-    }
-
-    func sectionSpacing() -> some View {
-        self.padding(.bottom, 8)
-    }
 }
 
 extension View {

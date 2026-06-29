@@ -253,6 +253,20 @@ enum OrbixStrings {
     // MARK: - Connection / Service
     static let sectionConnection = String(localized: "连接", comment: "Connection section")
 
+    // MARK: - App Lock
+    static let lockUnlockReason = String(localized: "解锁 Orbix", comment: "Unlock reason")
+    static let lockFallbackTitle = String(localized: "输入密码", comment: "Enter password")
+    static let lockLocked = String(localized: "已锁定", comment: "Locked")
+
+    // MARK: - Credentials / Connection test
+    static let connSuccess = String(localized: "连接成功", comment: "Connection successful")
+    static let connInvalidHost = String(localized: "无法连接到服务器，请检查地址和端口", comment: "Cannot connect to server")
+    static let connAuthFailed = String(localized: "认证失败，请检查 API Key 或用户名密码", comment: "Authentication failed")
+    static let connTimeout = String(localized: "连接超时，请检查网络或防火墙", comment: "Connection timeout")
+    static let connUnknown = String(localized: "无效响应", comment: "Invalid response")
+    static let connServerReturn = String(localized: "服务器返回 %d：%@", comment: "Server returned %d: %@")
+    static let connUnableConnect = String(localized: "无法连接 %@\n%@", comment: "Cannot connect %@: %@")
+
     // MARK: - Welcome tiles
     static let welcomeSubtitle1 = String(localized: "配置你的 qBittorrent 服务器地址", comment: "Configure server address")
     static let welcomeSubtitle2 = String(localized: "快速连接到远程或本地服务器", comment: "Quick connect to server")
