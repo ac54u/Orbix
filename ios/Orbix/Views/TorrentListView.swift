@@ -13,6 +13,10 @@ struct TorrentListView: View {
     @State private var altSpeedEnabled = false
     @State private var sortOrder: TorrentSort = .dateAdded
     @State private var selectedHash: String?
+    @State private var isEditMode = false
+    @State private var selectedHashes: Set<String> = []
+    @State private var showBatchDeleteAlert = false
+    @State private var processingAction: String?
     @Environment(\.scenePhase) private var scenePhase
 
     enum TorrentSort: CaseIterable {
@@ -96,21 +100,44 @@ struct TorrentListView: View {
                 } else {
                     List {
                         ForEach(filteredTorrents) { torrent in
-                            TorrentRow(torrent: torrent)
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        executeDelete(torrent)
-                                    } label: {
-                                        Label(OrbixStrings.btnDelete, systemImage: "trash")
-                                    }
+                            HStack(spacing: 0) {
+                                if isEditMode {
+                                    selectionIcon(for: torrent)
+                                        .padding(.trailing, AppSpacing.md)
                                 }
-                                .contentShape(Rectangle())
-                                .onTapGesture {
+
+                                TorrentRow(torrent: torrent)
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    executeSingleAction(.deleteFiles, torrent)
+                                } label: {
+                                    Label(OrbixStrings.btnDelete, systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    executeSingleAction(torrent.statusBadge.isPaused ? .start : .stop, torrent)
+                                } label: {
+                                    Label(
+                                        torrent.statusBadge.isPaused ? OrbixStrings.btnStart : OrbixStrings.btnPause,
+                                        systemImage: torrent.statusBadge.isPaused ? "play.fill" : "pause.fill"
+                                    )
+                                }
+                                .tint(torrent.statusBadge.isPaused ? AppColors.success : AppColors.warning)
+                            }
+                            .contextMenu { contextMenuItems(for: torrent) }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if isEditMode {
+                                    toggleSelection(torrent.hash)
+                                } else {
                                     selectedHash = torrent.hash
                                 }
+                            }
                         }
                     }
                     .listStyle(.plain)
@@ -125,52 +152,91 @@ struct TorrentListView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                if globalDlSpeed > 0 || globalUpSpeed > 0 {
-                    GlobalSpeedPill(dl: globalDlSpeed, up: globalUpSpeed)
-                        .padding(.bottom, 16)
-                        .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
-                } else {
-                    Color.clear.frame(height: 0)
+                VStack(spacing: 8) {
+                    if isEditMode && !selectedHashes.isEmpty {
+                        batchActionBar
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
+                    if !isEditMode && (globalDlSpeed > 0 || globalUpSpeed > 0) {
+                        GlobalSpeedPill(dl: globalDlSpeed, up: globalUpSpeed)
+                            .padding(.bottom, 8)
+                            .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
+                    }
                 }
             }
             .animation(AppMotion.standardCurve, value: globalDlSpeed > 0 || globalUpSpeed > 0)
+            .animation(AppMotion.mediumAnim(), value: isEditMode)
+            .animation(AppMotion.mediumAnim(), value: selectedHashes.count)
             .navigationTitle(OrbixStrings.tabTorrents)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button { showSpeedPanel = true } label: {
-                        Image(systemName: altSpeedEnabled ? "tortoise.fill" : "speedometer")
-                            .foregroundColor(altSpeedEnabled ? AppColors.warning : AppColors.accent)
+                    Button {
+                        if isEditMode {
+                            selectedHashes.removeAll()
+                            isEditMode = false
+                        } else {
+                            isEditMode = true
+                        }
+                    } label: {
+                        Text(isEditMode ? OrbixStrings.btnDone : OrbixStrings.btnEdit)
+                            .fontWeight(.medium)
+                            .foregroundColor(isEditMode ? AppColors.accent : AppColors.accent)
                     }
-                    .accessibilityLabel(OrbixStrings.sectionGlobalSpeedLimit)
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        ForEach(TorrentSort.allCases, id: \.self) { sort in
-                            Button {
-                                sortOrder = sort
-                            } label: {
-                                HStack {
-                                    Text(sort.displayName)
-                                    if sortOrder == sort {
-                                        Image(systemName: "checkmark")
+                    if !isEditMode {
+                        Button { showSpeedPanel = true } label: {
+                            Image(systemName: altSpeedEnabled ? "tortoise.fill" : "speedometer")
+                                .foregroundColor(altSpeedEnabled ? AppColors.warning : AppColors.accent)
+                        }
+                        .accessibilityLabel(OrbixStrings.sectionGlobalSpeedLimit)
+                    } else {
+                        Button {
+                            if selectedHashes.count == filteredTorrents.count {
+                                selectedHashes.removeAll()
+                            } else {
+                                selectedHashes = Set(filteredTorrents.map(\.hash))
+                            }
+                        } label: {
+                            Text(selectedHashes.count == filteredTorrents.count ? OrbixStrings.btnDeselectAll : OrbixStrings.btnSelectAll)
+                                .fontWeight(.medium)
+                                .foregroundColor(AppColors.accent)
+                        }
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if !isEditMode {
+                        Menu {
+                            ForEach(TorrentSort.allCases, id: \.self) { sort in
+                                Button {
+                                    sortOrder = sort
+                                } label: {
+                                    HStack {
+                                        Text(sort.displayName)
+                                        if sortOrder == sort {
+                                            Image(systemName: "checkmark")
+                                        }
                                     }
                                 }
                             }
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .foregroundColor(AppColors.accent)
                         }
-                    } label: {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .foregroundColor(AppColors.accent)
+                        .accessibilityLabel(OrbixStrings.sortName)
                     }
-                    .accessibilityLabel(OrbixStrings.sortName)
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showAddTorrent = true
-                    } label: {
-                        Image(systemName: "plus")
+                    if !isEditMode {
+                        Button {
+                            showAddTorrent = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel(OrbixStrings.navAddTorrent)
                     }
-                    .accessibilityLabel(OrbixStrings.navAddTorrent)
                 }
             }
             .onAppear { refresh() }
@@ -185,6 +251,13 @@ struct TorrentListView: View {
                 speedPanel
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
+            }
+            .alert(OrbixStrings.miscDeleteTorrentTitle, isPresented: $showBatchDeleteAlert) {
+                Button(OrbixStrings.btnDeleteTaskFiles, role: .destructive) { executeBatchDelete(deleteFiles: true) }
+                Button(OrbixStrings.btnDeleteTaskOnly, role: .destructive) { executeBatchDelete(deleteFiles: false) }
+                Button(OrbixStrings.btnCancel, role: .cancel) {}
+            } message: {
+                Text(String(format: OrbixStrings.infoBatchDeleteConfirm, selectedHashes.count))
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 filterBar
@@ -230,6 +303,224 @@ struct TorrentListView: View {
         }
         .background(.ultraThinMaterial)
     }
+
+    // MARK: - Selection
+    private func selectionIcon(for torrent: TorrentInfo) -> some View {
+        let isSelected = selectedHashes.contains(torrent.hash)
+        return Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 22))
+            .foregroundColor(isSelected ? AppColors.accent : AppColors.tertiaryLabel)
+            .frame(width: 28)
+    }
+
+    private func toggleSelection(_ hash: String) {
+        let impact = UISelectionFeedbackGenerator()
+        impact.selectionChanged()
+        if selectedHashes.contains(hash) {
+            selectedHashes.remove(hash)
+        } else {
+            selectedHashes.insert(hash)
+        }
+    }
+
+    // MARK: - Context Menu
+    @ViewBuilder
+    private func contextMenuItems(for torrent: TorrentInfo) -> some View {
+        if torrent.statusBadge.isPaused {
+            Button {
+                executeSingleAction(.start, torrent)
+            } label: {
+                Label(OrbixStrings.btnStart, systemImage: "play.fill")
+            }
+        } else if torrent.isActive {
+            Button {
+                executeSingleAction(.stop, torrent)
+            } label: {
+                Label(OrbixStrings.btnPause, systemImage: "pause.fill")
+            }
+        }
+
+        if !torrent.statusBadge.isError {
+            Button {
+                executeSingleAction(.force, torrent)
+            } label: {
+                Label(OrbixStrings.btnForce, systemImage: "bolt.fill")
+            }
+        }
+
+        Button {
+            executeSingleAction(.recheck, torrent)
+        } label: {
+            Label(OrbixStrings.btnRecheck, systemImage: "checkmark.shield.fill")
+        }
+
+        Button {
+            executeSingleAction(.announce, torrent)
+        } label: {
+            Label(OrbixStrings.btnAnnounce, systemImage: "antenna.radiowaves.left.and.right")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            executeSingleAction(.deleteTask, torrent)
+        } label: {
+            Label(OrbixStrings.btnDeleteTaskOnly, systemImage: "trash")
+        }
+
+        Button(role: .destructive) {
+            executeSingleAction(.deleteFiles, torrent)
+        } label: {
+            Label(OrbixStrings.btnDeleteTaskFiles, systemImage: "trash.fill")
+        }
+    }
+
+    // MARK: - Single Action
+    private enum SingleActionType {
+        case start, stop, force, recheck, announce, deleteTask, deleteFiles
+    }
+
+    private func executeSingleAction(_ type: SingleActionType, _ torrent: TorrentInfo) {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+        processingAction = torrent.hash
+
+        Task {
+            do {
+                switch type {
+                case .start:
+                    try await QBitApi.shared.startTorrent(torrent.hash)
+                case .stop:
+                    try await QBitApi.shared.stopTorrent(torrent.hash)
+                case .force:
+                    try await QBitApi.shared.forceStartTorrent(torrent.hash)
+                case .recheck:
+                    try await QBitApi.shared.recheckTorrent(torrent.hash)
+                case .announce:
+                    try await QBitApi.shared.reannounceTorrent(torrent.hash)
+                case .deleteTask:
+                    try await QBitApi.shared.deleteTorrent(torrent.hash, deleteFiles: false)
+                    await MainActor.run {
+                        withAnimation(AppMotion.mediumAnim()) {
+                            self.torrents.removeAll { $0.hash == torrent.hash }
+                        }
+                    }
+                case .deleteFiles:
+                    try await QBitApi.shared.deleteTorrent(torrent.hash, deleteFiles: true)
+                    await MainActor.run {
+                        withAnimation(AppMotion.mediumAnim()) {
+                            self.torrents.removeAll { $0.hash == torrent.hash }
+                        }
+                    }
+                }
+                if type != .deleteTask && type != .deleteFiles {
+                    await MainActor.run { processingAction = nil }
+                    refresh()
+                }
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.success)
+            } catch {
+                await MainActor.run { processingAction = nil }
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.error)
+            }
+        }
+    }
+
+    // MARK: - Batch Actions
+    private var batchActionBar: some View {
+        HStack(spacing: 12) {
+            Text(String(format: OrbixStrings.miscSelectedCount, selectedHashes.count))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AppColors.secondaryLabel)
+
+            Spacer()
+
+            Button {
+                executeBatchAction(.stop)
+            } label: {
+                Label(OrbixStrings.btnBatchPause, systemImage: "pause.fill")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .tint(AppColors.warning)
+
+            Button {
+                executeBatchAction(.start)
+            } label: {
+                Label(OrbixStrings.btnBatchResume, systemImage: "play.fill")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .tint(AppColors.success)
+
+            Button(role: .destructive) {
+                showBatchDeleteAlert = true
+            } label: {
+                Label(OrbixStrings.btnBatchDelete, systemImage: "trash")
+                    .font(.system(size: 13, weight: .medium))
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    private func executeBatchAction(_ type: SingleActionType) {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+
+        let hashes = selectedHashes.joined(separator: "|")
+
+        Task {
+            do {
+                switch type {
+                case .start:
+                    try await QBitApi.shared.startTorrent(hashes)
+                case .stop:
+                    try await QBitApi.shared.stopTorrent(hashes)
+                default:
+                    break
+                }
+                await MainActor.run { selectedHashes.removeAll() }
+                refresh()
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.success)
+            } catch {
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.error)
+            }
+        }
+    }
+
+    private func executeBatchDelete(deleteFiles: Bool) {
+        let impact = UIImpactFeedbackGenerator(style: .heavy)
+        impact.impactOccurred()
+
+        let hashes = selectedHashes.joined(separator: "|")
+
+        Task {
+            do {
+                try await QBitApi.shared.deleteTorrent(hashes, deleteFiles: deleteFiles)
+                await MainActor.run {
+                    withAnimation(AppMotion.mediumAnim()) {
+                        torrents.removeAll { selectedHashes.contains($0.hash) }
+                        selectedHashes.removeAll()
+                    }
+                }
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.success)
+            } catch {
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.error)
+            }
+        }
+    }
+
+    // MARK: - Filter & Sort
 
     private var filteredTorrents: [TorrentInfo] {
         let base = switch filter {
@@ -282,24 +573,6 @@ struct TorrentListView: View {
             self.torrents = list
             self.globalDlSpeed = transfer?.dlInfoSpeed ?? 0
             self.globalUpSpeed = transfer?.upInfoSpeed ?? 0
-        }
-    }
-
-    private func executeDelete(_ torrent: TorrentInfo) {
-        Task {
-            do {
-                try await QBitApi.shared.deleteTorrent(torrent.hash, deleteFiles: true)
-                await MainActor.run {
-                    withAnimation(AppMotion.mediumAnim()) {
-                        self.torrents.removeAll { $0.hash == torrent.hash }
-                    }
-                }
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-            } catch {
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.error)
-            }
         }
     }
 

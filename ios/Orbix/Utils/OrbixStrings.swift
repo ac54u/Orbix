@@ -246,6 +246,15 @@ enum OrbixStrings {
     static let miscBookmark = String(localized: "收藏", comment: "Bookmark")
     static let miscUnbookmark = String(localized: "取消收藏", comment: "Unbookmark")
 
+    // MARK: - Batch / Edit mode
+    static let btnSelectAll = String(localized: "全选", comment: "Select all")
+    static let btnDeselectAll = String(localized: "取消全选", comment: "Deselect all")
+    static let btnBatchPause = String(localized: "批量暂停", comment: "Batch pause")
+    static let btnBatchResume = String(localized: "批量恢复", comment: "Batch resume")
+    static let btnBatchDelete = String(localized: "批量删除", comment: "Batch delete")
+    static let miscSelectedCount = String(localized: "已选 %d 项", comment: "Selected %d items")
+    static let infoBatchDeleteConfirm = String(localized: "确定要删除选中的 %d 个种子吗？此操作不可撤销。", comment: "Confirm batch delete")
+
     // MARK: - Filter / Sort extras
     static let filterActive = String(localized: "活动中", comment: "Active")
     static let filterCompleted = String(localized: "已完成", comment: "Completed")
