@@ -12,11 +12,6 @@ struct SwipeableTorrentCard: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            NavigationLink(destination: TorrentDetailView(hash: torrent.hash), isActive: $navigateToDetail) {
-                EmptyView()
-            }
-            .hidden()
-
             if offset < 0 {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(AppColors.danger)
@@ -67,6 +62,9 @@ struct SwipeableTorrentCard: View {
             }
             .buttonStyle(SolidCardButtonStyle())
             .offset(x: offset)
+            .navigationDestination(isPresented: $navigateToDetail) {
+                TorrentDetailView(hash: torrent.hash)
+            }
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 10)
