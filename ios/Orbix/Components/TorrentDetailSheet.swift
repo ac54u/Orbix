@@ -163,3 +163,10 @@ struct TorrentDetailSheet: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    @Previewable @State var bookmarks: Set<String> = []
+    TorrentDetailSheet(torrent: .demo(), bookmarks: $bookmarks, onChanged: {})
+}
+#endif

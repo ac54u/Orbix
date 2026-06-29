@@ -56,3 +56,10 @@ struct TorrentCard: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    TorrentCard(torrent: .demo())
+        .frame(width: 160, height: 160)
+}
+#endif

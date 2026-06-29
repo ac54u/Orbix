@@ -805,10 +805,16 @@ struct TorrentDetailView: View {
         let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: "zh_CN")
-        fmt.dateFormat = "yyyy年M月d日 HH:mm"
+        fmt.setLocalizedDateFormatFromTemplate("yMMMMdjm")
         return fmt.string(from: date)
     }
 }
+
+#if DEBUG
+#Preview {
+    TorrentDetailView(hash: "demo")
+}
+#endif
 
 
 

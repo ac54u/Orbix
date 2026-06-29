@@ -108,3 +108,32 @@ struct QBitResultCard: View {
         )
     }
 }
+
+#if DEBUG
+struct QBitResultCardPreview: View {
+    @State private var radarrResult: SearchResult?
+    @State private var qualityProfiles: [RadarrApi.QualityProfile] = []
+    @State private var rootFolders: [RadarrApi.RootFolder] = []
+    @State private var showRadarrSheet = false
+    @State private var showDownloadSheet = false
+    @State private var selectedResult: SearchResult?
+
+    var body: some View {
+        QBitResultCard(
+            item: .demo(),
+            searchSource: .qBittorrent,
+            selectedResult: $selectedResult,
+            radarrResult: $radarrResult,
+            qualityProfiles: $qualityProfiles,
+            rootFolders: $rootFolders,
+            showRadarrSheet: $showRadarrSheet,
+            showDownloadSheet: $showDownloadSheet
+        )
+        .padding()
+    }
+}
+
+#Preview {
+    QBitResultCardPreview()
+}
+#endif

@@ -111,3 +111,10 @@ struct SwipeableTorrentCard: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    SwipeableTorrentCard(torrent: .demo(), onDelete: {})
+        .padding(.horizontal, 16)
+}
+#endif

@@ -16,3 +16,13 @@ struct ScrapedTorrent: Codable, Identifiable, Equatable {
         lhs.code == rhs.code
     }
 }
+
+#if DEBUG
+extension ScrapedTorrent {
+    static func demo() -> ScrapedTorrent {
+        ScrapedTorrent(code: "SSIS-001", title: "Sample Title", size: "5.2GB",
+                       date: "2026-06-29", thumbnail: nil, magnet: "magnet:?xt=urn:btih:demo",
+                       torrentUrl: nil, pageUrl: nil, description: "A sample description.")
+    }
+}
+#endif

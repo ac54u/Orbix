@@ -49,3 +49,14 @@ struct StatusIcon: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    HStack(spacing: 16) {
+        StatusIcon(status: .downloading)
+        StatusIcon(status: .uploading)
+        StatusIcon(status: .pausedDL)
+        StatusIcon(status: .error)
+    }
+}
+#endif

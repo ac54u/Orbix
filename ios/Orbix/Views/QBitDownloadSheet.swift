@@ -92,3 +92,9 @@ struct QBitDownloadSheet: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    QBitDownloadSheet(result: .demo(), categories: ["Movies", "TV", "Music"])
+}
+#endif

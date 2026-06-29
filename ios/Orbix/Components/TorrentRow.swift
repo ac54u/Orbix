@@ -101,3 +101,10 @@ struct TorrentRow: View {
         return AppColors.accent
     }
 }
+
+#if DEBUG
+#Preview {
+    TorrentRow(torrent: .demo())
+        .padding()
+}
+#endif

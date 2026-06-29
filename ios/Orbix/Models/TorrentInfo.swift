@@ -66,6 +66,37 @@ struct TorrentInfo: Codable, Identifiable {
         errorString = try c.decodeIfPresent(String.self, forKey: .errorString) ?? ""
     }
 
+#if DEBUG
+    init(hash: String = "demo", name: String, state: String = "downloading", progress: Double = 0,
+         dlspeed: Int64 = 0, upspeed: Int64 = 0, dlLimit: Int64 = 0, upLimit: Int64 = 0,
+         eta: Int64 = 0, size: Int64 = 0, downloaded: Int64 = 0, uploaded: Int64 = 0,
+         ratio: Double = 0, numSeeds: Int = 0, numLeechs: Int = 0,
+         category: String = "", tags: String = "", savePath: String = "",
+         addedOn: Int64 = 0, completionOn: Int64 = 0,
+         error: Int = 0, errorString: String = "") {
+        self.hash = hash; self.name = name; self.state = state
+        self.progress = progress; self.dlspeed = dlspeed; self.upspeed = upspeed
+        self.dlLimit = dlLimit; self.upLimit = upLimit; self.eta = eta
+        self.size = size; self.downloaded = downloaded; self.uploaded = uploaded
+        self.ratio = ratio; self.numSeeds = numSeeds; self.numLeechs = numLeechs
+        self.category = category; self.tags = tags; self.savePath = savePath
+        self.addedOn = addedOn; self.completionOn = completionOn
+        self.error = error; self.errorString = errorString
+    }
+
+    static func demo(name: String = "Ubuntu 24.04 LTS (Noble Numbat) Desktop ISO x64",
+                     state: String = "downloading", progress: Double = 0.65,
+                     dlspeed: Int64 = 10_240_000, upspeed: Int64 = 512_000,
+                     size: Int64 = 5_876_543_210, downloaded: Int64 = 3_800_000_000,
+                     uploaded: Int64 = 200_000_000, ratio: Double = 0.05,
+                     numSeeds: Int = 142, numLeechs: Int = 38) -> TorrentInfo {
+        TorrentInfo(name: name, state: state, progress: progress,
+                    dlspeed: dlspeed, upspeed: upspeed,
+                    size: size, downloaded: downloaded, uploaded: uploaded,
+                    ratio: ratio, numSeeds: numSeeds, numLeechs: numLeechs)
+    }
+#endif
+
     var statusBadge: TorrentStatus {
         TorrentStatus(rawValue: state) ?? .unknown
     }
@@ -391,3 +422,17 @@ struct SearchResult: Codable, Identifiable {
         case siteUrl = "siteUrl"
     }
 }
+
+#if DEBUG
+extension SearchResult {
+    static func demo(num: Int = 1, descr: String = "magnet:?xt=urn:btih:demo",
+                     fileName: String = "Ubuntu 24.04 LTS (Noble Numbat) Desktop AMD64 iso",
+                     fileSize: Int = 5_876_543_210,
+                     nbSeeders: Int = 142, nbLeechers: Int = 38,
+                     siteUrl: String = "https://ubuntu.com", isAdded: Bool = false) -> SearchResult {
+        SearchResult(num: num, descr: descr, fileName: fileName, fileSize: fileSize,
+                     nbLeechers: nbLeechers, nbSeeders: nbSeeders, siteUrl: siteUrl,
+                     isAdded: isAdded)
+    }
+}
+#endif
