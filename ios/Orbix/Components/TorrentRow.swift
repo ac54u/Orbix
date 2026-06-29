@@ -83,7 +83,7 @@ struct TorrentRow: View {
         Text(torrent.statusBadge.displayName)
             .caption(torrent.statusBadge.statusColor)
     }
-
+}
 
 #if DEBUG
 #Preview {
