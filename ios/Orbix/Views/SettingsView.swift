@@ -27,7 +27,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 16) {
                     if !isLoading {
                         serverSection
                         securitySection
@@ -54,7 +54,7 @@ struct SettingsView: View {
 
     // MARK: - Server Section
     private var serverSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
@@ -97,7 +97,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var securitySection: some View {
         if appLock.isDeviceSupported {
-            VStack(spacing: 16) {
+            VStack(spacing: 10) {
                 HStack(spacing: 8) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
@@ -122,7 +122,7 @@ struct SettingsView: View {
                             .labelsHidden()
                     }
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 11)
 
                     if appLock.isEnabled {
                         separator
@@ -131,7 +131,7 @@ struct SettingsView: View {
                             .foregroundColor(AppColors.tertiaryLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
+                            .padding(.vertical, 11)
                     }
                 }
                 .cardBackground()
@@ -144,7 +144,7 @@ struct SettingsView: View {
     private var servicesSection: some View {
         let list = creds.allCredentials
         if !list.isEmpty {
-            VStack(spacing: 16) {
+            VStack(spacing: 10) {
                 HStack(spacing: 8) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
@@ -188,7 +188,7 @@ struct SettingsView: View {
                             Spacer()
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 11)
                     }
                     .buttonStyle(.plain)
                 }
@@ -212,7 +212,7 @@ struct SettingsView: View {
             Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundColor(AppColors.tertiaryLabel)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, 11)
     }
 
     private func serviceColor(_ kind: ServiceKind) -> Color {
@@ -225,7 +225,7 @@ struct SettingsView: View {
 
     // MARK: - Update Section
     private var updateSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
@@ -261,7 +261,7 @@ struct SettingsView: View {
                         else { Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundColor(AppColors.tertiaryLabel) }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 11)
                 }
                 .buttonStyle(.plain)
                 .disabled(isCheckingUpdate)
@@ -388,7 +388,7 @@ struct SettingsView: View {
             Text(value).font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(AppColors.label)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, 11)
     }
 
     // MARK: - Data
