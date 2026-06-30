@@ -25,18 +25,20 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if !isLoading {
-                    serverSection
-                    securitySection
-                    servicesSection
-                    updateSection
-                    aboutSection
+            ScrollView {
+                VStack(spacing: 24) {
+                    if !isLoading {
+                        serverSection
+                        securitySection
+                        servicesSection
+                        updateSection
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(AppColors.mainBg)
+            .background(AppColors.mainBg.ignoresSafeArea())
             .navigationTitle(OrbixStrings.navSettings)
             .sheet(isPresented: $showAddService) {
                 AddServiceView(existing: editingCred) { cred in
@@ -49,169 +51,243 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Server
-    @ViewBuilder
+    // MARK: - Server Section
     private var serverSection: some View {
-        Section {
-            row(icon: "network", label: OrbixStrings.sectionAddress, value: serverURL)
-            if !serverVersion.isEmpty {
-                row(icon: "cube.transparent", label: OrbixStrings.miscQBVersion, value: serverVersion)
-            }
-            row(icon: "person.fill", label: OrbixStrings.sectionUser, value: username)
-            row(icon: "rectangle.portrait.and.arrow.right",
-                label: OrbixStrings.btnSwitchServer,
-                value: "",
-                tint: AppColors.danger) {
-                logout()
-            }
-        } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "server.rack")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppColors.accent)
-                Text(serverName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppColors.label)
-                Spacer()
+        VStack(spacing: 16) {
+            sectionTitle(OrbixStrings.sectionServer, icon: "server.rack") {
                 if let online = serverOnline {
                     HStack(spacing: 4) {
-                        Circle().fill(online ? AppColors.success : AppColors.danger).frame(width: 6, height: 6)
+                        Circle().fill(online ? AppColors.success : AppColors.danger).frame(width: 7, height: 7)
                         Text(online ? String(localized: "在线", comment: "Online") : String(localized: "离线", comment: "Offline"))
+                            .font(.system(size: 13))
+                            .foregroundColor(online ? AppColors.success : AppColors.danger)
                     }
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.secondaryLabel)
                 }
             }
-            .textCase(nil)
+
+            VStack(spacing: 1) {
+                itemRow(icon: "network", label: OrbixStrings.sectionAddress, value: serverURL)
+                if !serverVersion.isEmpty {
+                    itemRow(icon: "cube.transparent", label: OrbixStrings.miscQBVersion, value: serverVersion)
+                }
+                itemRow(icon: "person.fill", label: OrbixStrings.sectionUser, value: username)
+            }
+            .cardBackground()
+
+            Button {
+                logout()
+            } label: {
+                Text(OrbixStrings.btnSwitchServer)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(AppColors.danger)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .cardBackground()
         }
     }
 
-    // MARK: - Security
+    // MARK: - Security Section
     @ViewBuilder
     private var securitySection: some View {
         if appLock.isDeviceSupported {
-            Section {
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(isOn: $appLock.isEnabled) {
-                        Text(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric)
+            VStack(spacing: 16) {
+                sectionTitle(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric,
+                             icon: appLock.hasFaceID ? "faceid" : "touchid")
+
+                VStack(spacing: 1) {
+                    HStack {
+                        Label(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric,
+                              systemImage: appLock.hasFaceID ? "faceid" : "touchid")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppColors.label)
+                        Spacer()
+                        Toggle("", isOn: $appLock.isEnabled)
+                            .tint(AppColors.accent)
+                            .labelsHidden()
                     }
-                    .tint(AppColors.accent)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
 
                     if appLock.isEnabled {
-                        Text(String(format: String(localized: "后台 8 秒后自动锁定", comment: "Auto-lock after 8s in background"), Int(AppConstants.lockGracePeriod)))
-                            .font(.system(size: 12))
+                        Text(String(localized: "切到后台 8 秒后自动锁定", comment: "Auto-lock after 8s"))
+                            .font(.system(size: 13))
                             .foregroundColor(AppColors.tertiaryLabel)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 14)
                     }
                 }
-            } header: {
-                labeledHeader(icon: appLock.hasFaceID ? "faceid" : "touchid",
-                              title: appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric)
+                .cardBackground()
             }
         }
     }
 
-    // MARK: - Services
+    // MARK: - Services Section
     @ViewBuilder
     private var servicesSection: some View {
         let list = creds.allCredentials
         if !list.isEmpty {
-            Section {
-                ForEach(list) { cred in
-                    row(icon: cred.kind.icon,
-                        label: cred.name,
-                        value: "\(cred.host):\(cred.port)") {
-                        editingCred = cred
-                        showAddService = true
-                    }
-                }
+            VStack(spacing: 16) {
+                sectionTitle(OrbixStrings.sectionServices, icon: "antenna.radiowaves.left.and.right")
 
-                row(icon: "plus.circle.fill",
-                    label: OrbixStrings.navAddService,
-                    value: "",
-                    tint: AppColors.accent) {
-                    editingCred = nil
-                    showAddService = true
+                VStack(spacing: 1) {
+                    ForEach(list) { cred in
+                        Button {
+                            editingCred = cred
+                            showAddService = true
+                        } label: {
+                            serviceRow(cred: cred)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button {
+                        editingCred = nil
+                        showAddService = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.12)).frame(width: 32, height: 32)
+                                Image(systemName: "plus").font(.system(size: 14, weight: .bold)).foregroundColor(AppColors.accent)
+                            }
+                            Text(OrbixStrings.navAddService)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(AppColors.accent)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
                 }
-            } header: {
-                labeledHeader(icon: "antenna.radiowaves.left.and.right",
-                              title: OrbixStrings.sectionServices)
+                .cardBackground()
             }
         }
     }
 
-    // MARK: - Update
-    @ViewBuilder
+    private func serviceRow(cred: ServiceCredential) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8).fill(serviceColor(cred.kind).opacity(0.12)).frame(width: 32, height: 32)
+                Image(systemName: cred.kind.icon).font(.system(size: 15, weight: .medium)).foregroundColor(serviceColor(cred.kind))
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(cred.name).font(.system(size: 15, weight: .medium)).foregroundColor(AppColors.label)
+                Text("\(cred.host):\(cred.port)").font(.system(size: 12, design: .monospaced)).foregroundColor(AppColors.tertiaryLabel)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundColor(AppColors.tertiaryLabel)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+    }
+
+    private func serviceColor(_ kind: ServiceKind) -> Color {
+        switch kind {
+        case .qBittorrent: return AppColors.accent
+        case .prowlarr: return AppColors.warning
+        case .radarr: return Color(hex: "#8B5CF6")
+        }
+    }
+
+    // MARK: - Update Section
     private var updateSection: some View {
-        Section {
-            HStack {
-                Group {
-                    if isCheckingUpdate {
-                        Label(OrbixStrings.btnCheckUpdate, systemImage: "arrow.down.circle.dotted")
-                    } else if let check = updateCheck, check.latest != nil {
-                        Label(OrbixStrings.miscUpdateAvailable, systemImage: "star.circle.fill")
-                            .foregroundColor(AppColors.warning)
-                    } else if updateCheck?.error != nil {
-                        Label(OrbixStrings.btnRetry, systemImage: "exclamationmark.circle.fill")
-                            .foregroundColor(AppColors.danger)
-                    } else if updateCheck != nil {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Label(OrbixStrings.btnCheckUpdate, systemImage: "checkmark.circle.fill")
-                                .foregroundColor(AppColors.success)
-                            Text(OrbixStrings.msgUpToDate)
-                                .font(.system(size: 12))
-                                .foregroundColor(AppColors.success.opacity(0.8))
-                        }
-                    } else {
-                        Label(OrbixStrings.btnCheckUpdate, systemImage: "arrow.down.circle")
-                            .foregroundColor(AppColors.secondaryLabel)
-                    }
-                }
-                .font(.system(size: 15, weight: .medium))
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .medium))
+        VStack(spacing: 16) {
+            sectionTitle(OrbixStrings.sectionUpdate, icon: "arrow.down.circle") {
+                Text("v\(appVersion)")
+                    .font(.system(size: 13))
                     .foregroundColor(AppColors.tertiaryLabel)
             }
-            .contentShape(Rectangle())
-            .onTapGesture { checkUpdate() }
-            .disabled(isCheckingUpdate)
+
+            VStack(spacing: 1) {
+                Button {
+                    checkUpdate()
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(updateIconColor.opacity(0.12))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: updateIconName)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(updateIconColor)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(updateStatusText).font(.system(size: 15, weight: .medium)).foregroundColor(AppColors.label)
+                            if let detail = updateStatusDetail {
+                                Text(detail).font(.system(size: 12)).foregroundColor(AppColors.tertiaryLabel)
+                            }
+                        }
+                        Spacer()
+                        if isCheckingUpdate { ProgressView().scaleEffect(0.8) }
+                        else { Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundColor(AppColors.tertiaryLabel) }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+                .disabled(isCheckingUpdate)
+            }
+            .cardBackground()
 
             if let release = updateCheck?.latest {
-                updateReleaseInfo(release)
+                releaseCard(release)
             }
 
             if isDownloading {
-                downloadProgressBar
+                downloadProgressView
             }
-        } header: {
-            labeledHeader(icon: "arrow.down.circle", title: "v\(appVersion)")
         }
     }
 
-    // MARK: - About
-    private var aboutSection: some View {
-        Section {
-            row(icon: "tag", label: String(localized: "版本", comment: "Version"), value: appVersion)
-            row(icon: "number", label: String(localized: "构建号", comment: "Build"), value: buildNumber)
-        } header: {
-            labeledHeader(icon: "info.circle", title: String(localized: "关于", comment: "About"))
-        }
+    private var updateIconName: String {
+        if isCheckingUpdate { return "arrow.down.circle.dotted" }
+        if let check = updateCheck, check.latest != nil { return "star.circle.fill" }
+        if updateCheck?.error != nil { return "exclamationmark.circle.fill" }
+        if updateCheck != nil { return "checkmark.circle.fill" }
+        return "arrow.down.circle"
     }
 
-    // MARK: - Update Release Info
-    private func updateReleaseInfo(_ release: AppRelease) -> some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            HStack(spacing: AppSpacing.sm) {
-                Text(release.version)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(AppColors.label)
+    private var updateIconColor: Color {
+        if let check = updateCheck, check.latest != nil { return AppColors.warning }
+        if updateCheck?.error != nil { return AppColors.danger }
+        if updateCheck != nil { return AppColors.success }
+        return AppColors.accent
+    }
+
+    private var updateStatusText: String {
+        if isCheckingUpdate { return OrbixStrings.btnCheckUpdate }
+        if updateCheck?.latest != nil { return OrbixStrings.miscUpdateAvailable }
+        if updateCheck?.error != nil { return OrbixStrings.btnRetry }
+        if updateCheck != nil { return OrbixStrings.btnCheckUpdate }
+        return OrbixStrings.btnCheckUpdate
+    }
+
+    private var updateStatusDetail: String? {
+        if isCheckingUpdate { return nil }
+        if updateCheck?.latest != nil { return nil }
+        if updateCheck?.error != nil { return nil }
+        if updateCheck != nil { return OrbixStrings.msgUpToDate }
+        return nil
+    }
+
+    private func releaseCard(_ release: AppRelease) -> some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8).fill(AppColors.warning.opacity(0.12)).frame(width: 32, height: 32)
+                    Image(systemName: "sparkles").font(.system(size: 14)).foregroundColor(AppColors.warning)
+                }
+                Text(release.version).font(.system(size: 17, weight: .bold)).foregroundColor(AppColors.label)
                 Spacer()
                 if let size = release.ipaSize {
                     Text(formatBytes(size))
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(AppColors.tertiaryLabel)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Capsule().fill(AppColors.elevated))
                 }
             }
 
@@ -220,10 +296,7 @@ struct SettingsView: View {
                 .replacingOccurrences(of: "https?://\\S+", with: "", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             if !cleanNotes.isEmpty {
-                Text(cleanNotes)
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColors.secondaryLabel)
-                    .lineLimit(3)
+                Text(cleanNotes).font(.system(size: 13)).foregroundColor(AppColors.secondaryLabel).lineLimit(3)
             }
 
             Button {
@@ -233,16 +306,17 @@ struct SettingsView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(RoundedRectangle(cornerRadius: AppRadius.sm).fill(AppColors.accent))
+                    .padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.accent))
             }
             .disabled(isDownloading)
         }
-        .padding(.vertical, 8)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 20).fill(AppColors.card))
     }
 
-    private var downloadProgressBar: some View {
-        VStack(spacing: 6) {
+    private var downloadProgressView: some View {
+        VStack(spacing: 8) {
             GeometryReader { geo in
                 Capsule()
                     .fill(AppColors.accent)
@@ -252,53 +326,39 @@ struct SettingsView: View {
                     .animation(.easeOut(duration: 0.3), value: downloadProgress)
             }
             .frame(height: 4)
-
             Text("\(min(99, Int(downloadProgress * 100)))%")
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundColor(AppColors.accent)
         }
+        .padding(.horizontal, 16)
     }
 
-    // MARK: - Row Helpers
-    private func labeledHeader(icon: String, title: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(AppColors.accent)
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(AppColors.label)
-        }
-        .textCase(nil)
-    }
-
-    private func row(icon: String, label: String, value: String, tint: Color = AppColors.label, action: (() -> Void)? = nil) -> some View {
-        Button {
-            action?()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(action == nil ? AppColors.tertiaryLabel : tint)
-                    .frame(width: 20)
-                Text(label)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(action == nil ? AppColors.secondaryLabel : tint)
-                Spacer()
-                if !value.isEmpty {
-                    Text(value)
-                        .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(tint)
-                        .lineLimit(1)
-                }
-                if action != nil {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppColors.tertiaryLabel)
-                }
+    // MARK: - Shared Components
+    private func sectionTitle(_ title: String, icon: String, trailing: (() -> some View)? = nil) -> some View {
+        HStack(spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
+                Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
             }
+            Text(title).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
+            Spacer()
+            if let t = trailing { AnyView(t()) }
         }
-        .disabled(action == nil)
+        .padding(.leading, 4)
+    }
+
+    private func itemRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8).fill(AppColors.elevated).frame(width: 32, height: 32)
+                Image(systemName: icon).font(.system(size: 13)).foregroundColor(AppColors.tertiaryLabel)
+            }
+            Text(label).font(.system(size: 15, weight: .medium)).foregroundColor(AppColors.secondaryLabel)
+            Spacer()
+            Text(value).font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(AppColors.label)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
     }
 
     // MARK: - Data
@@ -373,12 +433,24 @@ struct SettingsView: View {
     }
 
     private func shareIpa(_ url: URL) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let root = window.rootViewController else { return }
-
+        guard let win = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let w = win.windows.first, let root = w.rootViewController else { return }
         let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         root.present(vc, animated: true)
+    }
+}
+
+private struct CardBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(RoundedRectangle(cornerRadius: 16).fill(AppColors.card))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black.opacity(0.05), lineWidth: 0.5))
+    }
+}
+
+private extension View {
+    func cardBackground() -> some View {
+        modifier(CardBackground())
     }
 }
 

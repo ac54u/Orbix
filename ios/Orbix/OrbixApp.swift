@@ -15,7 +15,6 @@ struct OrbixApp: App {
                 ContentView()
             }
             .environmentObject(appLock)
-            .preferredColorScheme(.dark)
         }
     }
 }
