@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatsView: View {
     @State private var transfer: TransferInfo?
+    @State private var serverState: ServerState?
     @State private var torrents: [TorrentInfo] = []
     @State private var isLoading = true
     @State private var serverVersion: String = ""
@@ -56,7 +57,7 @@ struct StatsView: View {
     // MARK: - History Stats
     @ViewBuilder
     private var historySection: some View {
-        if let s = transfer?.serverState {
+        if let s = serverState {
             Section {
                 statRow(icon: "arrow.down.circle.fill", color: AppColors.accent,
                         label: String(localized: "总下载量", comment: "Total downloaded"),
@@ -78,7 +79,6 @@ struct StatsView: View {
     // MARK: - Current Session
     private var sessionSection: some View {
         let t = transfer
-        let s = transfer?.serverState
         return Section {
             statRow(icon: "arrow.down", color: AppColors.accent,
                     label: String(localized: "下载速度", comment: "Download speed"),
@@ -100,12 +100,12 @@ struct StatsView: View {
 
             statRow(icon: "network", color: AppColors.accent.opacity(0.6),
                     label: "DHT",
-                    value: s.flatMap { "\($0.dhtNodes) " + String(localized: "节点", comment: "nodes") } ?? "—")
+                    value: serverState.flatMap { "\($0.dhtNodes) " + String(localized: "节点", comment: "nodes") } ?? "—")
 
             statRow(icon: "point.3.connected.trianglepath.dotted",
-                    color: s.flatMap { connectionColor($0.connectionStatus) } ?? AppColors.tertiaryLabel,
+                    color: serverState.flatMap { connectionColor($0.connectionStatus) } ?? AppColors.tertiaryLabel,
                     label: String(localized: "连接状态", comment: "Connection status"),
-                    value: s?.connectionStatus.capitalized ?? "—")
+                    value: serverState?.connectionStatus.capitalized ?? "—")
         } header: {
             Text(String(localized: "当前会话", comment: "Current session").uppercased())
         }
@@ -114,7 +114,7 @@ struct StatsView: View {
     // MARK: - Server Info
     @ViewBuilder
     private var serverInfoSection: some View {
-        if let s = transfer?.serverState {
+        if let s = serverState {
             Section {
                 statRow(icon: "internaldrive", color: Color(hex: "#8B5CF6"),
                         label: String(localized: "可用磁盘空间", comment: "Free disk space"),
@@ -201,20 +201,8 @@ struct StatsView: View {
                 let ver = try? await vTask
 
                 await MainActor.run {
-                    if var merged = t {
-                        if merged.serverState == nil, let state = sync?.serverState {
-                            merged = TransferInfo(
-                                dlInfoSpeed: merged.dlInfoSpeed,
-                                upInfoSpeed: merged.upInfoSpeed,
-                                dlRateLimit: merged.dlRateLimit,
-                                upRateLimit: merged.upRateLimit,
-                                dlInfoData: merged.dlInfoData,
-                                upInfoData: merged.upInfoData,
-                                serverState: state
-                            )
-                        }
-                        transfer = merged
-                    }
+                    transfer = t
+                    serverState = t?.serverState ?? sync?.serverState
                     torrents = list
                     serverVersion = ver ?? ""
                     isLoading = false
