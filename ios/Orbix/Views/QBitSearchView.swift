@@ -137,7 +137,7 @@ struct QBitSearchView: View {
             }
             .sheet(isPresented: $showDownloadSheet) {
                 if let result = selectedResult {
-                    QBitDownloadSheet(result: result, categories: categories)
+                    QBitDownloadSheet(result: result, categories: categories, isFromProwlarr: searchSource == .prowlarr)
                         .presentationDetents([.large])
                         .presentationDragIndicator(.visible)
                 }

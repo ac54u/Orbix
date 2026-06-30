@@ -15,11 +15,12 @@ enum ProwlarrApi {
         let seeders: Int
         let leechers: Int
         let downloadUrl: String?
+        let magnetUrl: String?
         let publishDate: String?
 
         enum CodingKeys: String, CodingKey {
             case guid, title, indexer, size, seeders, leechers
-            case downloadUrl, publishDate
+            case downloadUrl, magnetUrl, publishDate
         }
     }
 
@@ -40,6 +41,23 @@ enum ProwlarrApi {
         }
         let results = (try? decoder.decode([ProwlarrSearchResult].self, from: data)) ?? []
         return results.map(\.toUnified)
+    }
+
+    @MainActor
+    static func downloadTorrent(url: String) async throws -> Data {
+        guard let cred = CredentialsManager.shared.prowlarr, !cred.apiKey.isEmpty else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        guard let torrentURL = URL(string: url) else {
+            throw URLError(.badURL)
+        }
+        var req = URLRequest(url: torrentURL)
+        req.setValue(cred.apiKey, forHTTPHeaderField: "X-Api-Key")
+        let (data, response) = try await session.data(for: req)
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw NSError(domain: "Prowlarr", code: http.statusCode)
+        }
+        return data
     }
 
     @MainActor
@@ -67,9 +85,10 @@ private extension ProwlarrApi.ProwlarrSearchResult {
     }
 
     var toUnified: SearchResult {
-        SearchResult(
+        let downloadLink = magnetUrl ?? downloadUrl ?? ""
+        return SearchResult(
             num: stableId,
-            descr: downloadUrl ?? "",
+            descr: downloadLink,
             fileName: title,
             fileSize: Int(size),
             nbLeechers: leechers,
