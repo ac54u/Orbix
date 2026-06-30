@@ -115,7 +115,7 @@ private struct FeatureTile: View {
                 .fill(.ultraThinMaterial)
                 .overlay(
                     RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
-                        .stroke(Color.white.opacity(colorScheme == .dark ? 0.05 : 0), lineWidth: 0.5)
+                        .stroke(AppColors.glassBorder, lineWidth: 0.5)
                 )
         )
     }

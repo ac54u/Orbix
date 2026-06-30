@@ -22,6 +22,7 @@ struct SettingsView: View {
     @ObservedObject private var creds = CredentialsManager.shared
     @State private var showAddService = false
     @State private var editingCred: ServiceCredential?
+    @State private var showLogoutAlert = false
 
     var body: some View {
         NavigationStack {
@@ -72,25 +73,23 @@ struct SettingsView: View {
             }
             .padding(.leading, 4)
 
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 itemRow(icon: "network", label: OrbixStrings.sectionAddress, value: serverURL)
+                separator
                 if !serverVersion.isEmpty {
                     itemRow(icon: "cube.transparent", label: OrbixStrings.miscQBVersion, value: serverVersion)
+                    separator
                 }
                 itemRow(icon: "person.fill", label: OrbixStrings.sectionUser, value: username)
             }
             .cardBackground()
-
-            Button {
-                logout()
-            } label: {
-                Text(OrbixStrings.btnSwitchServer)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(AppColors.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+            .contextMenu {
+                Button(role: .destructive) {
+                    logout()
+                } label: {
+                    Label(OrbixStrings.btnSwitchServer, systemImage: "rectangle.portrait.and.arrow.right")
+                }
             }
-            .cardBackground()
         }
     }
 
@@ -111,7 +110,7 @@ struct SettingsView: View {
                 .padding(.leading, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(spacing: 1) {
+                VStack(spacing: 0) {
                     HStack {
                         Label(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric,
                               systemImage: appLock.hasFaceID ? "faceid" : "touchid")
@@ -126,12 +125,13 @@ struct SettingsView: View {
                     .padding(.vertical, 14)
 
                     if appLock.isEnabled {
+                        separator
                         Text(String(localized: "切到后台 8 秒后自动锁定", comment: "Auto-lock after 8s"))
                             .font(.system(size: 13))
                             .foregroundColor(AppColors.tertiaryLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20)
-                            .padding(.bottom, 14)
+                            .padding(.vertical, 14)
                     }
                 }
                 .cardBackground()
@@ -157,8 +157,8 @@ struct SettingsView: View {
                 .padding(.leading, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(spacing: 1) {
-                    ForEach(list) { cred in
+                VStack(spacing: 0) {
+                    ForEach(Array(list.enumerated()), id: \.element.id) { idx, cred in
                         Button {
                             editingCred = cred
                             showAddService = true
@@ -166,7 +166,12 @@ struct SettingsView: View {
                             serviceRow(cred: cred)
                         }
                         .buttonStyle(.plain)
+                        if idx < list.count - 1 {
+                            separator
+                        }
                     }
+
+                    separator
 
                     Button {
                         editingCred = nil
@@ -232,7 +237,7 @@ struct SettingsView: View {
             }
             .padding(.leading, 4)
 
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 Button {
                     checkUpdate()
                 } label: {
@@ -365,6 +370,13 @@ struct SettingsView: View {
     }
 
     // MARK: - Row Helpers
+    private var separator: some View {
+        Rectangle()
+            .fill(AppColors.separator)
+            .frame(height: 0.5)
+            .padding(.leading, 64)
+    }
+
     private func itemRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             ZStack {

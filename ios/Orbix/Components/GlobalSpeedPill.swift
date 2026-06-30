@@ -34,7 +34,7 @@ struct GlobalSpeedPill: View {
                 .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8)
                 .overlay(
                     Capsule()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                        .stroke(AppColors.glassBorder, lineWidth: 0.5)
                 )
         )
     }

@@ -14,8 +14,8 @@ enum AppColors {
     static let separator = Color(hex: "#E5E5EA")
     static let placeholder = Color(hex: "#C7C7CC")
 
-    static let accent = Color(hex: "#366EF6")
-    static let accentDark = Color(hex: "#0E52BA")
+    static let accent = Color(hex: "#3B82F6")
+    static let accentDark = Color(hex: "#2563EB")
     static let accentSoftBg = Color(hex: "#EBF0FF")
 
     static let success = Color(hex: "#34C759")

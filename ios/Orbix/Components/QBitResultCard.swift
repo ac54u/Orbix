@@ -102,7 +102,7 @@ struct QBitResultCard: View {
                 .fill(.ultraThinMaterial)
                 .overlay(
                     RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 0.5)
+                        .stroke(AppColors.glassBorder, lineWidth: 0.5)
                 )
                 .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
         )
