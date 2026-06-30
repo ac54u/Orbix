@@ -30,6 +30,8 @@ enum AppColors {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    static let glassBorder = Color.white.opacity(0.06)
 }
 
 enum AppRadius {
@@ -48,4 +50,24 @@ enum AppSpacing {
     static let lg: CGFloat = 16
     static let xl: CGFloat = 20
     static let xxl: CGFloat = 24
+}
+
+struct TeslaCard: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                    .fill(AppColors.card.opacity(0.7))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                    .stroke(AppColors.glassBorder, lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    func teslaCard() -> some View {
+        modifier(TeslaCard())
+    }
 }
