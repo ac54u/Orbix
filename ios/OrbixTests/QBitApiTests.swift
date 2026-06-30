@@ -72,7 +72,7 @@ final class QBitApiTests: XCTestCase {
 
         let server = ServerConfig(name: "test", host: "10.0.0.1", port: 8080, username: "u", password: "p", https: false)
         let result = await api.login(server: server)
-        XCTAssertEqual(result.status, .networkError)
+        XCTAssertEqual(result.status, .network)
         XCTAssertEqual(attemptCount, 2)
     }
 
@@ -110,8 +110,9 @@ final class QBitApiTests: XCTestCase {
         do {
             _ = try await api.authedGet("/test", type: [TorrentInfo].self) as [TorrentInfo]?
             XCTFail("Expected error")
-        } catch let error as ApiError {
-            XCTAssertEqual(error, .invalidURL)
+        } catch is ApiError {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
     }
 

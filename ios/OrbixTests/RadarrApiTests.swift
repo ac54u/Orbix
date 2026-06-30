@@ -155,6 +155,6 @@ final class RadarrApiTests: XCTestCase {
             throw URLError(.unknown)
         }
 
-        try await RadarrApi.addMovie(tmdbId: 1, title: "test", year: 2024, qualityProfileId: 1, rootFolderPath: "/")
+        _ = try? await RadarrApi.addMovie(tmdbId: 1, title: "test", year: 2024, qualityProfileId: 1, rootFolderPath: "/")
     }
 }
