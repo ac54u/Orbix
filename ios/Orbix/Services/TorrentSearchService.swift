@@ -8,13 +8,13 @@ actor TorrentSearchService {
 
     func trending(pages: Int = 2) async throws -> [ScrapedTorrent] {
         try await fetchPages(pages: pages, startPage: 1) { @Sendable page in
-            try await fetchNewPage(page)
+            try await self.fetchNewPage(page)
         }
     }
 
     func newTorrents(pages: Int = 1, startPage: Int = 1) async throws -> [ScrapedTorrent] {
         try await fetchPages(pages: pages, startPage: startPage) { @Sendable page in
-            try await fetchNewPage(page)
+            try await self.fetchNewPage(page)
         }
     }
 
