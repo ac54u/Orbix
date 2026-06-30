@@ -54,7 +54,13 @@ struct SettingsView: View {
     // MARK: - Server Section
     private var serverSection: some View {
         VStack(spacing: 16) {
-            sectionTitle(OrbixStrings.sectionServer, icon: "server.rack") {
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
+                    Image(systemName: "server.rack").font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
+                }
+                Text(OrbixStrings.sectionServer).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
+                Spacer()
                 if let online = serverOnline {
                     HStack(spacing: 4) {
                         Circle().fill(online ? AppColors.success : AppColors.danger).frame(width: 7, height: 7)
@@ -64,6 +70,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .padding(.leading, 4)
 
             VStack(spacing: 1) {
                 itemRow(icon: "network", label: OrbixStrings.sectionAddress, value: serverURL)
@@ -92,8 +99,17 @@ struct SettingsView: View {
     private var securitySection: some View {
         if appLock.isDeviceSupported {
             VStack(spacing: 16) {
-                sectionTitle(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric,
-                             icon: appLock.hasFaceID ? "faceid" : "touchid")
+                HStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
+                        Image(systemName: appLock.hasFaceID ? "faceid" : "touchid")
+                            .font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
+                    }
+                    Text(appLock.hasFaceID ? "Face ID" : OrbixStrings.miscBiometric)
+                        .font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
+                }
+                .padding(.leading, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: 1) {
                     HStack {
@@ -129,7 +145,17 @@ struct SettingsView: View {
         let list = creds.allCredentials
         if !list.isEmpty {
             VStack(spacing: 16) {
-                sectionTitle(OrbixStrings.sectionServices, icon: "antenna.radiowaves.left.and.right")
+                HStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
+                    }
+                    Text(OrbixStrings.sectionServices)
+                        .font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
+                }
+                .padding(.leading, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: 1) {
                     ForEach(list) { cred in
@@ -195,11 +221,16 @@ struct SettingsView: View {
     // MARK: - Update Section
     private var updateSection: some View {
         VStack(spacing: 16) {
-            sectionTitle(OrbixStrings.sectionUpdate, icon: "arrow.down.circle") {
-                Text("v\(appVersion)")
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColors.tertiaryLabel)
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
+                    Image(systemName: "arrow.down.circle").font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
+                }
+                Text(OrbixStrings.sectionUpdate).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
+                Spacer()
+                Text("v\(appVersion)").font(.system(size: 13)).foregroundColor(AppColors.tertiaryLabel)
             }
+            .padding(.leading, 4)
 
             VStack(spacing: 1) {
                 Button {
@@ -333,20 +364,7 @@ struct SettingsView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - Shared Components
-    private func sectionTitle(_ title: String, icon: String, trailing: (() -> some View)? = nil) -> some View {
-        HStack(spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8).fill(AppColors.accent.opacity(0.1)).frame(width: 28, height: 28)
-                Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.accent)
-            }
-            Text(title).font(.system(size: 13, weight: .semibold)).foregroundColor(AppColors.secondaryLabel).textCase(.uppercase)
-            Spacer()
-            if let t = trailing { AnyView(t()) }
-        }
-        .padding(.leading, 4)
-    }
-
+    // MARK: - Row Helpers
     private func itemRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             ZStack {
