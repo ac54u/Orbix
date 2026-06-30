@@ -105,7 +105,7 @@ struct QBitSearchView: View {
                                     .caption()
                             }
                             if searchSource == .radarr {
-                                Text(OrbixStrings.infoRadarrHint)
+                                Text(OrbixStrings.infoRadarrSearchHint)
                                     .caption()
                             }
                             Spacer()
