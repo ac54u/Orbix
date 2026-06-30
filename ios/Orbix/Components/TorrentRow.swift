@@ -20,6 +20,8 @@ struct TorrentRow: View {
                     if torrent.dlspeed > 0 || torrent.upspeed > 0 {
                         speedRow
                     }
+
+                    timeRow
                 }
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -148,6 +150,35 @@ struct TorrentRow: View {
         }
     }
 
+    @ViewBuilder
+    private var timeRow: some View {
+        let addedInfo = relativeTime(from: torrent.addedOn)
+        let completedInfo: String? = {
+            guard torrent.isCompleted || torrent.completionOn > 0 else { return nil }
+            return relativeTime(from: torrent.completionOn)
+        }()
+
+        if let completed = completedInfo {
+            HStack(spacing: AppSpacing.sm) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppColors.success)
+                Text("\(String(localized: "完成于", comment: "Completed at")) \(completed)")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.tertiaryLabel)
+            }
+        } else if !addedInfo.isEmpty {
+            HStack(spacing: AppSpacing.sm) {
+                Image(systemName: "clock")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppColors.placeholder)
+                Text("\(String(localized: "添加于", comment: "Added at")) \(addedInfo)")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.placeholder)
+            }
+        }
+    }
+
     private var categoryPill: some View {
         Text(torrent.category)
             .font(.system(size: 10, weight: .semibold))
@@ -179,8 +210,9 @@ struct TorrentRow: View {
 
 #if DEBUG
 #Preview {
+    let now = Int64(Date().timeIntervalSince1970)
     VStack(spacing: AppSpacing.sm) {
-        TorrentRow(torrent: .demo())
+        TorrentRow(torrent: .demo(addedOn: now - 3600))
         TorrentRow(torrent: .demo(
             name: "Debian 12.5.0 amd64 netinst.iso",
             state: "uploading",
@@ -190,7 +222,9 @@ struct TorrentRow: View {
             size: 629_145_600,
             ratio: 3.42,
             numSeeds: 0,
-            numLeechs: 0
+            numLeechs: 0,
+            addedOn: now - 259200,
+            completionOn: now - 86400
         ))
         TorrentRow(torrent: .demo(
             name: "Fedora-Workstation-Live-x86_64-40.iso",
@@ -200,7 +234,8 @@ struct TorrentRow: View {
             upspeed: 0,
             size: 2_147_483_648,
             numSeeds: 85,
-            numLeechs: 12
+            numLeechs: 12,
+            addedOn: now - 604800
         ))
     }
     .padding(.horizontal, AppSpacing.lg)

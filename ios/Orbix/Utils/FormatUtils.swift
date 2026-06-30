@@ -21,3 +21,22 @@ func formatBytes(_ bytes: Int64) -> String {
     if bytes >= kb { return String(format: "%.2f KB", Double(bytes) / Double(kb)) }
     return "\(bytes) B"
 }
+
+func relativeTime(from timestamp: Int64) -> String {
+    guard timestamp > 0 else { return "" }
+    let interval = Date().timeIntervalSince(Date(timeIntervalSince1970: TimeInterval(timestamp)))
+    if interval < 0 { return "" }
+    let mins = Int(interval / 60)
+    let hours = mins / 60
+    let days = hours / 24
+    let weeks = days / 7
+    let months = days / 30
+    let years = days / 365
+    if years >= 1 { return String(localized: "\(years)年前") }
+    if months >= 1 { return String(localized: "\(months)个月前") }
+    if weeks >= 1 { return String(localized: "\(weeks)周前") }
+    if days >= 1 { return String(localized: "\(days)天前") }
+    if hours >= 1 { return String(localized: "\(hours)小时前") }
+    if mins >= 1 { return String(localized: "\(mins)分钟前") }
+    return String(localized: "刚刚")
+}
