@@ -16,7 +16,6 @@ struct StatsView: View {
                 if !isLoading {
                     serverSection
                     historySection
-                    speedLimitSection
                     sessionSection
                     serverInfoSection
                     torrentStatusSection
@@ -47,7 +46,7 @@ struct StatsView: View {
                     .foregroundColor(AppColors.label)
                 Spacer()
                 Text(serverVersion.isEmpty ? "—" : serverVersion)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundColor(AppColors.label)
             }
         } header: {
@@ -72,46 +71,6 @@ struct StatsView: View {
                     value: s?.globalRatio ?? "—")
         } header: {
             Text(String(localized: "历史统计", comment: "History stats").uppercased())
-        }
-    }
-
-    // MARK: - Speed Limits
-    private var speedLimitSection: some View {
-        let dl = transfer?.dlRateLimit ?? 0
-        let ul = transfer?.upRateLimit ?? 0
-        return Section {
-            HStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    Image(systemName: "arrow.down")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AppColors.accent)
-                    Text(dl > 0 ? formatSpeed(dl) : "∞")
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
-                        .foregroundColor(AppColors.accent)
-                    Text(String(localized: "下载限速", comment: "Download limit"))
-                        .font(.system(size: 11))
-                        .foregroundColor(AppColors.secondaryLabel)
-                }
-                .frame(maxWidth: .infinity)
-
-                Divider()
-
-                VStack(spacing: 4) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AppColors.success)
-                    Text(ul > 0 ? formatSpeed(ul) : "∞")
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
-                        .foregroundColor(AppColors.success)
-                    Text(String(localized: "上传限速", comment: "Upload limit"))
-                        .font(.system(size: 11))
-                        .foregroundColor(AppColors.secondaryLabel)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.vertical, 8)
-        } header: {
-            Text(String(localized: "速度限制", comment: "Speed limits").uppercased())
         }
     }
 
@@ -152,18 +111,20 @@ struct StatsView: View {
     }
 
     // MARK: - Server Info
+    @ViewBuilder
     private var serverInfoSection: some View {
-        let s = transfer?.serverState
-        return Section {
-            statRow(icon: "internaldrive", color: Color(hex: "#8B5CF6"),
-                    label: String(localized: "可用磁盘空间", comment: "Free disk space"),
-                    value: s.flatMap { formatBytes($0.freeSpaceOnDisk) } ?? "—")
+        if let s = transfer?.serverState {
+            Section {
+                statRow(icon: "internaldrive", color: Color(hex: "#8B5CF6"),
+                        label: String(localized: "可用磁盘空间", comment: "Free disk space"),
+                        value: formatBytes(s.freeSpaceOnDisk))
 
-            statRow(icon: "hourglass", color: AppColors.warning,
-                    label: String(localized: "队列状态", comment: "Queue status"),
-                    value: s.flatMap { $0.queueing ? String(localized: "排队中", comment: "Queueing") : String(localized: "正常", comment: "Normal") } ?? "—")
-        } header: {
-            Text(String(localized: "服务器信息", comment: "Server info").uppercased())
+                statRow(icon: "hourglass", color: AppColors.warning,
+                        label: String(localized: "队列状态", comment: "Queue status"),
+                        value: s.queueing ? String(localized: "排队中", comment: "Queueing") : String(localized: "正常", comment: "Normal"))
+            } header: {
+                Text(String(localized: "服务器信息", comment: "Server info").uppercased())
+            }
         }
     }
 
@@ -237,10 +198,10 @@ struct StatsView: View {
                 .frame(width: 26)
             Text(label)
                 .font(.system(size: 15))
-                .foregroundColor(AppColors.label)
+                .foregroundColor(AppColors.secondaryLabel)
             Spacer()
             Text(value)
-                .font(monospaced ? .system(size: 15, weight: .bold, design: .monospaced) : .system(size: 15, weight: .bold))
+                .font(monospaced ? .system(size: 15, weight: .regular, design: .monospaced) : .system(size: 15, weight: .regular))
                 .foregroundColor(AppColors.label)
         }
     }

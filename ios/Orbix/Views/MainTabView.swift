@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 final class SearchModeState: ObservableObject {
     @Published var use141: Bool = false
@@ -20,7 +21,6 @@ struct MainTabView: View {
                     Text(OrbixStrings.tabTorrents)
                 }
                 .tag(0)
-                .accessibilityLabel(OrbixStrings.tabTorrents)
 
             StatsView()
                 .tabItem {
@@ -28,7 +28,6 @@ struct MainTabView: View {
                     Text(OrbixStrings.tabTransfer)
                 }
                 .tag(1)
-                .accessibilityLabel(OrbixStrings.tabTransfer)
 
             Group {
                 if searchMode.use141 {
@@ -42,7 +41,6 @@ struct MainTabView: View {
                 Text(OrbixStrings.tabSearch)
             }
             .tag(2)
-            .accessibilityLabel(OrbixStrings.tabSearch)
 
             SettingsView(onLogout: onLogout)
                 .tabItem {
@@ -50,11 +48,14 @@ struct MainTabView: View {
                     Text(OrbixStrings.tabSettings)
                 }
                 .tag(3)
-                .accessibilityLabel(OrbixStrings.tabSettings)
         }
         .tint(AppColors.accent)
         .onAppear {
             if let tab = initialTab { selectedTab = tab }
+        }
+        .onChange(of: selectedTab) { _, _ in
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
         }
     }
 }
