@@ -54,22 +54,24 @@ struct StatsView: View {
     }
 
     // MARK: - History Stats
+    @ViewBuilder
     private var historySection: some View {
-        let s = transfer?.serverState
-        return Section {
-            statRow(icon: "arrow.down.circle.fill", color: AppColors.accent,
-                    label: String(localized: "总下载量", comment: "Total downloaded"),
-                    value: s.flatMap { formatBytes($0.alltimeDl) } ?? "—")
+        if let s = transfer?.serverState {
+            Section {
+                statRow(icon: "arrow.down.circle.fill", color: AppColors.accent,
+                        label: String(localized: "总下载量", comment: "Total downloaded"),
+                        value: formatBytes(s.alltimeDl))
 
-            statRow(icon: "arrow.up.circle.fill", color: AppColors.success,
-                    label: String(localized: "总上传量", comment: "Total uploaded"),
-                    value: s.flatMap { formatBytes($0.alltimeUl) } ?? "—")
+                statRow(icon: "arrow.up.circle.fill", color: AppColors.success,
+                        label: String(localized: "总上传量", comment: "Total uploaded"),
+                        value: formatBytes(s.alltimeUl))
 
-            statRow(icon: "chart.line.uptrend.xyaxis", color: AppColors.warning,
-                    label: String(localized: "分享率", comment: "Ratio"),
-                    value: s?.globalRatio ?? "—")
-        } header: {
-            Text(String(localized: "历史统计", comment: "History stats").uppercased())
+                statRow(icon: "chart.line.uptrend.xyaxis", color: AppColors.warning,
+                        label: String(localized: "分享率", comment: "Ratio"),
+                        value: s.globalRatio ?? "—")
+            } header: {
+                Text(String(localized: "历史统计", comment: "History stats").uppercased())
+            }
         }
     }
 
