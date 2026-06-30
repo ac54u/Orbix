@@ -32,6 +32,13 @@ struct TorrentDetailView: View {
         case pause, force, recheck, announce
     }
 
+    private let dataService: TorrentDetailDataService
+
+    init(hash: String) {
+        self.hash = hash
+        self.dataService = TorrentDetailDataService(hash: hash)
+    }
+
     var body: some View {
         ZStack {
             AppColors.mainBg.ignoresSafeArea()
@@ -590,57 +597,37 @@ struct TorrentDetailView: View {
 
     // MARK: - Tiered Refresh Strategy
     private func refreshInfoPeers() async {
-        do {
-            // High-freq (2s): torrent info via syncMainData + peers via delta
-            async let data = QBitApi.shared.syncMainData(rid: syncRid)
-            async let (peers, newPeersRid) = QBitApi.shared.getTorrentPeers(hash, rid: peersRid)
-
-            let (sync, peerResult, peerRid) = try await (data, peers, newPeersRid)
-            try Task.checkCancellation()
-
-            await MainActor.run {
-                if let t = sync?.torrents?[hash] { self.torrent = t }
-                if let rid = sync?.rid { self.syncRid = rid }
-                if !peerResult.isEmpty { self.peers = peerResult }
-                self.peersRid = peerRid
-                pollCount += 1
-                loadError = nil
-            }
-        } catch is CancellationError {
-        } catch {
-            await MainActor.run {
-                if torrent == nil { loadError = error.localizedDescription }
-            }
+        let result = await dataService.fetchHighFreq(syncRid: syncRid, peersRid: peersRid)
+        await MainActor.run {
+            if let t = result.torrent { self.torrent = t }
+            self.syncRid = result.syncRid
+            if !result.peers.isEmpty { self.peers = result.peers }
+            self.peersRid = result.peersRid
+            pollCount += 1
+            loadError = nil
         }
     }
 
     private func refreshFilesTrackers() async {
-        // Low-freq (8s): files + trackers (rarely change)
-        if let f = try? await QBitApi.shared.getTorrentFiles(hash) {
+        let result = await dataService.fetchLowFreq()
+        if let f = result.files {
             await MainActor.run { self.files = f }
         }
-        if let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
+        if let tr = result.trackers {
             await MainActor.run { self.trackers = tr }
         }
     }
 
     private func autoRefreshLoop() async {
-        // 先快速拉取一条记录让 UI 立刻渲染
-        if let t = try? await QBitApi.shared.getTorrentByHash(hash) {
-            await MainActor.run { torrent = t; isLoading = false }
-            // 剩余数据后台加载，不阻塞 UI
-            if let p = try? await QBitApi.shared.getProperties(hash) {
-                await MainActor.run { properties = p }
+        do {
+            let initial = try await dataService.fetchInitial()
+            await MainActor.run {
+                self.torrent = initial.torrent; isLoading = false
+                self.properties = initial.properties
+                self.files = initial.files; self.trackers = initial.trackers
+                self.peers = initial.peers; self.peersRid = initial.peersRid
             }
-            if let f = try? await QBitApi.shared.getTorrentFiles(hash) {
-                await MainActor.run { files = f }
-            }
-            if let tr = try? await QBitApi.shared.getTorrentTrackers(hash) {
-                await MainActor.run { trackers = tr }
-            }
-            let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
-            await MainActor.run { peers = pe; peersRid = rid }
-        } else {
+        } catch {
             await MainActor.run {
                 isLoading = false
                 loadError = OrbixStrings.errCantLoadTorrent
@@ -651,22 +638,18 @@ struct TorrentDetailView: View {
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
                 while !Task.isCancelled {
-                    do {
-                        try await Task.sleep(nanoseconds: 2_000_000_000)
-                    } catch is CancellationError {
-                        break
-                    } catch { break }
+                    do { try await Task.sleep(nanoseconds: 2_000_000_000) }
+                    catch is CancellationError { break }
+                    catch { break }
                     guard !Task.isCancelled else { break }
                     await refreshInfoPeers()
                 }
             }
             group.addTask {
                 while !Task.isCancelled {
-                    do {
-                        try await Task.sleep(nanoseconds: 8_000_000_000)
-                    } catch is CancellationError {
-                        break
-                    } catch { break }
+                    do { try await Task.sleep(nanoseconds: 8_000_000_000) }
+                    catch is CancellationError { break }
+                    catch { break }
                     guard !Task.isCancelled else { break }
                     await refreshFilesTrackers()
                 }
@@ -675,21 +658,17 @@ struct TorrentDetailView: View {
     }
 
     @Sendable private func manualRefresh() async {
-        let t = try? await QBitApi.shared.getTorrentByHash(hash)
-        let p = try? await QBitApi.shared.getProperties(hash)
-        let f = (try? await QBitApi.shared.getTorrentFiles(hash)) ?? []
-        let tr = (try? await QBitApi.shared.getTorrentTrackers(hash)) ?? []
-        let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
+        let data = await dataService.fetchAll()
         await MainActor.run {
-            if let t = t {
+            if let t = data.torrent {
                 self.torrent = t; loadError = nil
             } else if self.torrent == nil {
                 loadError = OrbixStrings.errCantLoadTorrent
             }
-            if let p = p { self.properties = p }
-            self.files = f; self.trackers = tr; self.peers = pe
-            self.peersRid = rid; self.syncRid = 0
-            isLoading = false
+            if let p = data.properties { self.properties = p }
+            self.files = data.files; self.trackers = data.trackers
+            self.peers = data.peers; self.peersRid = data.peersRid
+            self.syncRid = 0; isLoading = false
         }
     }
 
@@ -704,21 +683,20 @@ struct TorrentDetailView: View {
         let oldUpspeed = torrent.upspeed
         let oldProgress = torrent.progress
 
+        let action: TorrentDetailAction = {
+            switch type {
+            case .pause: return .pause(isPaused: torrent.statusBadge.isPaused)
+            case .force: return .force
+            case .recheck: return .recheck
+            case .announce: return .announce
+            }
+        }()
+
         Task {
             do {
-                switch type {
-                case .pause:
-                    if torrent.statusBadge.isPaused {
-                        try await QBitApi.shared.startTorrent(hash)
-                    } else {
-                        try await QBitApi.shared.stopTorrent(hash)
-                    }
-                case .force:
-                    try await QBitApi.shared.forceStartTorrent(hash)
-                case .recheck:
-                    try await QBitApi.shared.recheckTorrent(hash)
-                case .announce:
-                    try await QBitApi.shared.reannounceTorrent(hash)
+                try await dataService.performAction(action)
+
+                if type == .announce {
                     lastAnnounceAt = Date()
                     announceCooldown = true
                     Task { @MainActor in
@@ -730,54 +708,24 @@ struct TorrentDetailView: View {
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.success)
 
-                // Smart polling with exponential backoff + state diffing
-                var interval: UInt64 = 300_000_000
-                let maxInterval: UInt64 = 1_200_000_000
-                var attempt = 0
-
-                while attempt < 6 {
-                    do {
-                        try await Task.sleep(nanoseconds: interval)
-                    } catch {
-                        break
-                    }
-                    attempt += 1
-
-                    if let newTorrent = try? await QBitApi.shared.getTorrentByHash(hash) {
-                        let stateChanged = newTorrent.state != oldState
-                        let speedChanged = abs(newTorrent.dlspeed - oldDlspeed) > 1024
-                            || abs(newTorrent.upspeed - oldUpspeed) > 1024
-                        let progressChanged = abs(newTorrent.progress - oldProgress) > 0.001
-
-                        if stateChanged || speedChanged || progressChanged || attempt >= 6 {
-                            await MainActor.run { self.torrent = newTorrent }
-                            break
-                        }
-                    }
-
-                    interval = min(maxInterval, interval * 13 / 8)
+                if let newTorrent = await dataService.pollAfterAction(
+                    oldState: oldState, oldDlspeed: oldDlspeed,
+                    oldUpspeed: oldUpspeed, oldProgress: oldProgress
+                ) {
+                    await MainActor.run { self.torrent = newTorrent }
                 }
 
-                // Final sync
-                let p = try? await QBitApi.shared.getProperties(hash)
-                let f = try? await QBitApi.shared.getTorrentFiles(hash)
-                let tr = try? await QBitApi.shared.getTorrentTrackers(hash)
-                let (pe, rid) = (try? await QBitApi.shared.getTorrentPeers(hash, rid: 0)) ?? ([], 0)
+                let details = await dataService.fetchDetailsAfterAction()
                 await MainActor.run {
-                    if let p = p { properties = p }
-                    if let f = f { files = f }
-                    if let tr = tr { trackers = tr }
-                    peers = pe; peersRid = rid
+                    if let p = details.properties { properties = p }
+                    files = details.files; trackers = details.trackers
+                    peers = details.peers; peersRid = details.peersRid
                 }
-
             } catch {
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.error)
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
 
-            await MainActor.run {
-                processingAction = nil
-            }
+            await MainActor.run { processingAction = nil }
         }
     }
 
