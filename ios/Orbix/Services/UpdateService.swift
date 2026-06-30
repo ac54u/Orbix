@@ -5,7 +5,7 @@ actor UpdateService {
     private init() {}
 
     private let session = URLSession(configuration: .ephemeral)
-    private let repo = "ac54u/orbix"
+    private let repo = "ac54u/Orbix"
 
     func check() async -> UpdateCheck {
         let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
@@ -13,8 +13,9 @@ actor UpdateService {
         if let lastCheck = PersistenceService.shared.lastUpdateCheckTime,
            Date().timeIntervalSince(lastCheck) < UpdateConstants.checkCacheInterval,
            let cachedTag = PersistenceService.shared.cachedUpdateTag {
+            let cachedVersion = cachedTag.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
             return UpdateCheck(
-                hasUpdate: cachedTag.compare(currentVersion, options: .numeric) == .orderedDescending,
+                hasUpdate: cachedVersion.compare(currentVersion, options: .numeric) == .orderedDescending,
                 currentVersion: currentVersion,
                 latest: nil,
                 error: nil
@@ -30,7 +31,8 @@ actor UpdateService {
             PersistenceService.shared.lastUpdateCheckTime = Date()
             PersistenceService.shared.cachedUpdateTag = release.tag
 
-            let hasNew = release.tag.compare(currentVersion, options: .numeric) == .orderedDescending
+            let tagVersion = release.version.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
+            let hasNew = tagVersion.compare(currentVersion, options: .numeric) == .orderedDescending
             return hasNew
                 ? .available(currentVersion, release: release)
                 : .upToDate(currentVersion)
