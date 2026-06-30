@@ -14,13 +14,13 @@ struct StatsView: View {
         NavigationStack {
             List {
                 if !isLoading {
-                    if let t = transfer {
-                        serverSection(version: serverVersion)
-                        historySection(state: t.serverState)
-                        sessionSection(t: t, state: t.serverState)
-                        serverInfoSection(state: t.serverState)
-                    }
-                    torrentOverviewSection
+                    serverSection
+                    historySection
+                    speedLimitSection
+                    sessionSection
+                    serverInfoSection
+                    torrentStatusSection
+                    categorySection
                 }
             }
             .listStyle(.insetGrouped)
@@ -39,14 +39,14 @@ struct StatsView: View {
     }
 
     // MARK: - Server
-    private func serverSection(version: String) -> some View {
+    private var serverSection: some View {
         Section {
             HStack {
                 Text("qBittorrent")
                     .font(.system(size: 15))
                     .foregroundColor(AppColors.label)
                 Spacer()
-                Text(version.isEmpty ? "—" : "v\(version)")
+                Text(serverVersion.isEmpty ? "—" : serverVersion)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(AppColors.label)
             }
@@ -55,86 +55,120 @@ struct StatsView: View {
         }
     }
 
-    // MARK: - History
-    @ViewBuilder
-    private func historySection(state: ServerState?) -> some View {
-        if let s = state {
-            Section {
-                statRow(icon: "arrow.down.circle.fill", color: AppColors.accent,
-                        label: String(localized: "总下载量", comment: "Total downloaded"),
-                        value: formatBytes(s.alltimeDl))
+    // MARK: - History Stats
+    private var historySection: some View {
+        let s = transfer?.serverState
+        return Section {
+            statRow(icon: "arrow.down.circle.fill", color: AppColors.accent,
+                    label: String(localized: "总下载量", comment: "Total downloaded"),
+                    value: s.flatMap { formatBytes($0.alltimeDl) } ?? "—")
 
-                statRow(icon: "arrow.up.circle.fill", color: AppColors.success,
-                        label: String(localized: "总上传量", comment: "Total uploaded"),
-                        value: formatBytes(s.alltimeUl))
+            statRow(icon: "arrow.up.circle.fill", color: AppColors.success,
+                    label: String(localized: "总上传量", comment: "Total uploaded"),
+                    value: s.flatMap { formatBytes($0.alltimeUl) } ?? "—")
 
-                statRow(icon: "chart.line.uptrend.xyaxis", color: AppColors.warning,
-                        label: String(localized: "分享率", comment: "Ratio"),
-                        value: s.globalRatio ?? "—")
-            } header: {
-                Text(String(localized: "历史统计", comment: "History stats").uppercased())
+            statRow(icon: "chart.line.uptrend.xyaxis", color: AppColors.warning,
+                    label: String(localized: "分享率", comment: "Ratio"),
+                    value: s?.globalRatio ?? "—")
+        } header: {
+            Text(String(localized: "历史统计", comment: "History stats").uppercased())
+        }
+    }
+
+    // MARK: - Speed Limits
+    private var speedLimitSection: some View {
+        let dl = transfer?.dlRateLimit ?? 0
+        let ul = transfer?.upRateLimit ?? 0
+        return Section {
+            HStack(spacing: 0) {
+                VStack(spacing: 4) {
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                    Text(dl > 0 ? formatSpeed(dl) : "∞")
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundColor(AppColors.accent)
+                    Text(String(localized: "下载限速", comment: "Download limit"))
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.secondaryLabel)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider()
+
+                VStack(spacing: 4) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.success)
+                    Text(ul > 0 ? formatSpeed(ul) : "∞")
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundColor(AppColors.success)
+                    Text(String(localized: "上传限速", comment: "Upload limit"))
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.secondaryLabel)
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(.vertical, 8)
+        } header: {
+            Text(String(localized: "速度限制", comment: "Speed limits").uppercased())
         }
     }
 
     // MARK: - Current Session
-    @ViewBuilder
-    private func sessionSection(t: TransferInfo, state: ServerState?) -> some View {
-        Section {
+    private var sessionSection: some View {
+        let t = transfer
+        let s = transfer?.serverState
+        return Section {
             statRow(icon: "arrow.down", color: AppColors.accent,
                     label: String(localized: "下载速度", comment: "Download speed"),
-                    value: formatSpeed(t.dlInfoSpeed),
+                    value: t.flatMap { formatSpeed($0.dlInfoSpeed) } ?? "0 B/s",
                     monospaced: true)
 
             statRow(icon: "arrow.up", color: AppColors.success,
                     label: String(localized: "上传速度", comment: "Upload speed"),
-                    value: formatSpeed(t.upInfoSpeed),
+                    value: t.flatMap { formatSpeed($0.upInfoSpeed) } ?? "0 B/s",
                     monospaced: true)
 
             statRow(icon: "tray.and.arrow.down", color: AppColors.accent.opacity(0.7),
                     label: String(localized: "已下载", comment: "Downloaded"),
-                    value: formatBytes(t.dlInfoData))
+                    value: t.flatMap { formatBytes($0.dlInfoData) } ?? "—")
 
             statRow(icon: "tray.and.arrow.up", color: AppColors.success.opacity(0.7),
                     label: String(localized: "已上传", comment: "Uploaded"),
-                    value: formatBytes(t.upInfoData))
+                    value: t.flatMap { formatBytes($0.upInfoData) } ?? "—")
 
-            if let s = state {
-                statRow(icon: "network", color: AppColors.accent.opacity(0.6),
-                        label: "DHT",
-                        value: "\(s.dhtNodes) \(String(localized: "节点", comment: "nodes"))")
+            statRow(icon: "network", color: AppColors.accent.opacity(0.6),
+                    label: "DHT",
+                    value: s.flatMap { "\($0.dhtNodes) " + String(localized: "节点", comment: "nodes") } ?? "—")
 
-                statRow(icon: "point.3.connected.trianglepath.dotted", color: connectionColor(s.connectionStatus),
-                        label: String(localized: "连接状态", comment: "Connection status"),
-                        value: s.connectionStatus.capitalized)
-            }
+            statRow(icon: "point.3.connected.trianglepath.dotted",
+                    color: s.flatMap { connectionColor($0.connectionStatus) } ?? AppColors.tertiaryLabel,
+                    label: String(localized: "连接状态", comment: "Connection status"),
+                    value: s?.connectionStatus.capitalized ?? "—")
         } header: {
             Text(String(localized: "当前会话", comment: "Current session").uppercased())
         }
     }
 
     // MARK: - Server Info
-    @ViewBuilder
-    private func serverInfoSection(state: ServerState?) -> some View {
-        if let s = state {
-            Section {
-                statRow(icon: "internaldrive", color: Color(hex: "#8B5CF6"),
-                        label: String(localized: "可用磁盘空间", comment: "Free disk space"),
-                        value: formatBytes(s.freeSpaceOnDisk))
+    private var serverInfoSection: some View {
+        let s = transfer?.serverState
+        return Section {
+            statRow(icon: "internaldrive", color: Color(hex: "#8B5CF6"),
+                    label: String(localized: "可用磁盘空间", comment: "Free disk space"),
+                    value: s.flatMap { formatBytes($0.freeSpaceOnDisk) } ?? "—")
 
-                if s.queueing {
-                    statRow(icon: "hourglass", color: AppColors.warning,
-                            label: String(localized: "队列状态", comment: "Queue status"),
-                            value: String(localized: "排队中", comment: "Queueing"))
-                }
-            } header: {
-                Text(String(localized: "服务器信息", comment: "Server info").uppercased())
-            }
+            statRow(icon: "hourglass", color: AppColors.warning,
+                    label: String(localized: "队列状态", comment: "Queue status"),
+                    value: s.flatMap { $0.queueing ? String(localized: "排队中", comment: "Queueing") : String(localized: "正常", comment: "Normal") } ?? "—")
+        } header: {
+            Text(String(localized: "服务器信息", comment: "Server info").uppercased())
         }
     }
 
-    // MARK: - Torrent Overview
-    private var torrentOverviewSection: some View {
+    // MARK: - Torrent Status
+    private var torrentStatusSection: some View {
         let dl = torrents.filter { $0.statusBadge == .downloading || $0.statusBadge == .metaDL }.count
         let up = torrents.filter { $0.statusBadge == .uploading || $0.statusBadge == .stalledUP }.count
         let paused = torrents.filter { $0.statusBadge.isPaused }.count
@@ -161,15 +195,44 @@ struct StatsView: View {
                     label: OrbixStrings.statsError,
                     value: "\(errored)")
         } header: {
-            Text(String(localized: "分类", comment: "Categories").uppercased())
+            Text(String(localized: "种子状态", comment: "Torrent status").uppercased())
         }
+    }
+
+    // MARK: - Categories
+    private var categorySection: some View {
+        let cats = Dictionary(grouping: torrents, by: { $0.category.isEmpty ? String(localized: "未分类", comment: "Uncategorized") : $0.category })
+            .mapValues { $0.count }
+            .sorted(by: { $0.key < $1.key })
+
+        guard !cats.isEmpty else {
+            return AnyView(EmptyView())
+        }
+
+        return AnyView(
+            Section {
+                ForEach(cats, id: \.key) { name, count in
+                    HStack(spacing: 12) {
+                        Text(name)
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.secondaryLabel)
+                        Spacer()
+                        Text("\(count)")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.label)
+                    }
+                }
+            } header: {
+                Text(String(localized: "分类", comment: "Categories").uppercased())
+            }
+        )
     }
 
     // MARK: - Row Helper
     private func statRow(icon: String, color: Color, label: String, value: String, monospaced: Bool = false) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 15))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(color)
                 .frame(width: 26)
             Text(label)
