@@ -2,11 +2,17 @@ import Foundation
 
 actor QBitApi {
     static let shared = QBitApi()
-    private init() {}
+    private init() {
+        self.session = URLSession(configuration: .ephemeral)
+    }
+
+    init(session: URLSession) {
+        self.session = session
+    }
 
     // MARK: - State
     var activeServer: ServerConfig?
-    let session = URLSession(configuration: .ephemeral)
+    let session: URLSession
     let decoder = JSONDecoder()
 
     // MARK: - Server Management

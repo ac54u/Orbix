@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Prowlarr API
 enum ProwlarrApi {
 
-    private static let session = URLSession(configuration: .ephemeral)
+    static var session: URLSession = URLSession(configuration: .ephemeral)
     private static let decoder = JSONDecoder()
 
     struct ProwlarrSearchResult: Codable, Identifiable {

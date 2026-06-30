@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Radarr API
 enum RadarrApi {
 
-    private static let session = URLSession(configuration: .ephemeral)
+    static var session: URLSession = URLSession(configuration: .ephemeral)
     private static let decoder = JSONDecoder()
 
     struct RadarrMovie: Codable, Identifiable {

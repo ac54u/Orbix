@@ -114,6 +114,8 @@ final class CredentialsManager: ObservableObject {
         _ = KeychainService.save(key: key, data: data)
     }
 
+    static var testSession: URLSession = .shared
+
     // MARK: - Connection Test
     enum TestResult: Equatable {
         case ok
@@ -186,7 +188,7 @@ final class CredentialsManager: ObservableObject {
         req.httpBody = body
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: req)
+            let (_, response) = try await Self.testSession.data(for: req)
             guard let http = response as? HTTPURLResponse else { return .unknown(OrbixStrings.connUnknown) }
             if http.statusCode == 200 {
                 if kind == .qBittorrent && !https { return .okInsecure }
