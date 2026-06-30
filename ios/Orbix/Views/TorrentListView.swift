@@ -82,130 +82,40 @@ struct TorrentListView: View {
                 AppColors.mainBg.ignoresSafeArea()
 
                 if isLoading {
-                    VStack(spacing: 12) {
-                        SkeletonBar(height: 80)
-                        SkeletonBar(height: 80)
-                        SkeletonBar(height: 80)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    loadingContent
                 } else if filteredTorrents.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "square.stack")
-                            .font(.system(size: 48))
-                            .foregroundColor(AppColors.placeholder)
-                        Text(filter == .all ? OrbixStrings.msgNoTorrents : OrbixStrings.msgNoMatchingTorrents)
-                            .foregroundColor(AppColors.secondaryLabel)
-                    }
+                    emptyContent
                 } else {
                     torrentList
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 8) {
-                    if isEditMode && !selectedHashes.isEmpty {
-                        batchActionBar
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    if !isEditMode && (globalDlSpeed > 0 || globalUpSpeed > 0) {
-                        GlobalSpeedPill(dl: globalDlSpeed, up: globalUpSpeed)
-                            .padding(.bottom, 8)
-                            .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
-                    }
-                }
+                bottomInsetContent
             }
             .animation(AppMotion.standardCurve, value: globalDlSpeed > 0 || globalUpSpeed > 0)
             .animation(AppMotion.mediumAnim(), value: isEditMode)
             .animation(AppMotion.mediumAnim(), value: selectedHashes.count)
             .navigationTitle(OrbixStrings.tabTorrents)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        if isEditMode {
-                            selectedHashes.removeAll()
-                            isEditMode = false
-                        } else {
-                            isEditMode = true
-                        }
-                    } label: {
-                        Text(isEditMode ? OrbixStrings.btnDone : OrbixStrings.btnEdit)
-                            .fontWeight(.medium)
-                            .foregroundColor(isEditMode ? AppColors.accent : AppColors.accent)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if !isEditMode {
-                        Button { showSpeedPanel = true } label: {
-                            Image(systemName: altSpeedEnabled ? "tortoise.fill" : "speedometer")
-                                .foregroundColor(altSpeedEnabled ? AppColors.warning : AppColors.accent)
-                        }
-                        .accessibilityLabel(OrbixStrings.sectionGlobalSpeedLimit)
-                    } else {
-                        Button {
-                            if selectedHashes.count == filteredTorrents.count {
-                                selectedHashes.removeAll()
-                            } else {
-                                selectedHashes = Set(filteredTorrents.map(\.hash))
-                            }
-                        } label: {
-                            Text(selectedHashes.count == filteredTorrents.count ? OrbixStrings.btnDeselectAll : OrbixStrings.btnSelectAll)
-                                .fontWeight(.medium)
-                                .foregroundColor(AppColors.accent)
-                        }
-                    }
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if !isEditMode {
-                        Menu {
-                            ForEach(TorrentSort.allCases, id: \.self) { sort in
-                                Button {
-                                    sortOrder = sort
-                                } label: {
-                                    HStack {
-                                        Text(sort.displayName)
-                                        if sortOrder == sort {
-                                            Image(systemName: "checkmark")
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                filterBar
-            }
-        }
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
-                                .foregroundColor(AppColors.accent)
-                        }
-                        .accessibilityLabel(OrbixStrings.sortName)
-                    }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    if !isEditMode {
-                        Button {
-                            showAddTorrent = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .accessibilityLabel(OrbixStrings.navAddTorrent)
-                    }
-                }
-            }
+            .toolbar { toolbarContent }
             .onAppear { refresh() }
             .onReceive(timer) { _ in
                 guard scenePhase == .active else { return }
                 refresh()
             }
-            .sheet(isPresented: $showAddTorrent) {
-                AddTorrentView()
+            .safeAreaInset(edge: .top, spacing: 0) {
+                filterBar
             }
-            .sheet(isPresented: $showSpeedPanel) {
-                speedPanel
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
-            }
-            .alert(OrbixStrings.miscDeleteTorrentTitle, isPresented: $showBatchDeleteAlert) {
+        }
+        .sheet(isPresented: $showAddTorrent) {
+            AddTorrentView()
+        }
+        .sheet(isPresented: $showSpeedPanel) {
+            speedPanel
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        .alert(OrbixStrings.miscDeleteTorrentTitle, isPresented: $showBatchDeleteAlert) {
                 Button(OrbixStrings.btnDeleteTaskFiles, role: .destructive) { executeBatchDelete(deleteFiles: true) }
                 Button(OrbixStrings.btnDeleteTaskOnly, role: .destructive) { executeBatchDelete(deleteFiles: false) }
                 Button(OrbixStrings.btnCancel, role: .cancel) {}
@@ -267,6 +177,112 @@ struct TorrentListView: View {
                 toggleSelection(torrent.hash)
             } else {
                 selectedHash = torrent.hash
+            }
+        }
+    }
+
+    private var loadingContent: some View {
+        VStack(spacing: 12) {
+            SkeletonBar(height: 80)
+            SkeletonBar(height: 80)
+            SkeletonBar(height: 80)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+
+    private var emptyContent: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "square.stack")
+                .font(.system(size: 48))
+                .foregroundColor(AppColors.placeholder)
+            Text(filter == .all ? OrbixStrings.msgNoTorrents : OrbixStrings.msgNoMatchingTorrents)
+                .foregroundColor(AppColors.secondaryLabel)
+        }
+    }
+
+    private var bottomInsetContent: some View {
+        VStack(spacing: 8) {
+            if isEditMode && !selectedHashes.isEmpty {
+                batchActionBar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            if !isEditMode && (globalDlSpeed > 0 || globalUpSpeed > 0) {
+                GlobalSpeedPill(dl: globalDlSpeed, up: globalUpSpeed)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button {
+                if isEditMode {
+                    selectedHashes.removeAll()
+                    isEditMode = false
+                } else {
+                    isEditMode = true
+                }
+            } label: {
+                Text(isEditMode ? OrbixStrings.btnDone : OrbixStrings.btnEdit)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppColors.accent)
+            }
+        }
+        ToolbarItem(placement: .navigationBarLeading) {
+            if !isEditMode {
+                Button { showSpeedPanel = true } label: {
+                    Image(systemName: altSpeedEnabled ? "tortoise.fill" : "speedometer")
+                        .foregroundColor(altSpeedEnabled ? AppColors.warning : AppColors.accent)
+                }
+                .accessibilityLabel(OrbixStrings.sectionGlobalSpeedLimit)
+            } else {
+                Button {
+                    if selectedHashes.count == filteredTorrents.count {
+                        selectedHashes.removeAll()
+                    } else {
+                        selectedHashes = Set(filteredTorrents.map(\.hash))
+                    }
+                } label: {
+                    Text(selectedHashes.count == filteredTorrents.count ? OrbixStrings.btnDeselectAll : OrbixStrings.btnSelectAll)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+        ToolbarItem(placement: .navigationBarLeading) {
+            if !isEditMode {
+                Menu {
+                    ForEach(TorrentSort.allCases, id: \.self) { sort in
+                        Button {
+                            sortOrder = sort
+                        } label: {
+                            HStack {
+                                Text(sort.displayName)
+                                if sortOrder == sort {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .foregroundColor(AppColors.accent)
+                }
+                .accessibilityLabel(OrbixStrings.sortName)
+            }
+        }
+        ToolbarItem(placement: .primaryAction) {
+            if !isEditMode {
+                Button {
+                    showAddTorrent = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(OrbixStrings.navAddTorrent)
             }
         }
     }
